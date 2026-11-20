@@ -38,7 +38,7 @@ No Pages não há servidor, então o Proff roda inteiro no navegador:
 2. A chave fica salva **só no seu navegador** e vai direto para o provedor de IA.
 3. Sem chave, marque **Modo demonstração** para ver uma aula de exemplo.
 
-Configuração do Pages: *Settings → Pages → Deploy from a branch → `main` / `(root)`*. O `index.html` da raiz redireciona para `public/`.
+Publicação: o workflow `.github/workflows/pages.yml` roda os testes e publica a pasta `public/` a cada push na `main` (em *Settings → Pages*, a origem fica como **GitHub Actions**). Se preferir *Deploy from a branch* (`main` / `(root)`), o `index.html` da raiz redireciona para `public/`.
 
 ## Rodar no seu computador
 
