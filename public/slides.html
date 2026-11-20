@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proff · Apresentação</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="slides.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides" id="slides"></div>
+  </div>
+
+  <script type="module">
+    import { montarSlide, renderizarMatematica, el } from './slides-render.js';
+
+    let dados = null;
+    try { dados = JSON.parse(localStorage.getItem('proff:ultima')); } catch { /* sem armazenamento */ }
+
+    const raiz = document.getElementById('slides');
+    if (dados?.slides?.slides?.length) {
+      document.title = `${dados.slides.titulo} · Proff`;
+      raiz.replaceChildren(...dados.slides.slides.map((s) => montarSlide(s)));
+    } else {
+      raiz.replaceChildren(el('section', {}, [
+        el('h2', { texto: 'Nenhuma apresentação encontrada' }),
+        el('p', { texto: 'Gere uma aula na página inicial do Proff e clique em "Apresentar".' }),
+      ]));
+    }
+
+    renderizarMatematica(raiz);
+    Reveal.initialize({
+      hash: true,
+      slideNumber: 'c/t',
+      transition: 'slide',
+      width: 1280,
+      height: 720,
+      plugins: [RevealNotes],
+    });
+  </script>
+</body>
+</html>

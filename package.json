@@ -1,0 +1,15 @@
+{
+  "name": "proff",
+  "version": "1.0.0",
+  "description": "Gerador de plano de aula, slides e prova de Matemática para o Ensino Médio usando APIs gratuitas de IA.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "demo": "LLM_MOCK=1 node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

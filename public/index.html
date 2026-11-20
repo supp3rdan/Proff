@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proff · Aulas e provas de Matemática</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <span class="logo">π</span>
+      <div>
+        <h1>Proff</h1>
+        <p>Plano de aula, slides e prova de Matemática em minutos</p>
+      </div>
+    </div>
+    <span id="status-provedores" class="status"></span>
+  </header>
+
+  <main>
+    <form id="form" class="cartao formulario">
+      <div class="campo">
+        <label for="serie">Série</label>
+        <select id="serie" required>
+          <option value="1">1º ano</option>
+          <option value="2">2º ano</option>
+          <option value="3">3º ano</option>
+        </select>
+      </div>
+
+      <div class="campo campo-largo">
+        <label for="assunto">Assunto</label>
+        <input id="assunto" list="lista-assuntos" required maxlength="150"
+               placeholder="Escolha da lista ou digite, ex.: Função afim" autocomplete="off">
+        <datalist id="lista-assuntos"></datalist>
+      </div>
+
+      <div class="campo campo-inteiro">
+        <label for="observacoes">Como você gostaria da aula? <span class="opcional">(opcional)</span></label>
+        <textarea id="observacoes" rows="3" maxlength="1500"
+                  placeholder="Ex.: 1 aula de 50 min, exemplos com futebol, prova com 10 questões só de múltipla escolha, turma com dificuldade em frações..."></textarea>
+      </div>
+
+      <div class="campo campo-inteiro" id="campo-senha" hidden>
+        <label for="senha">Código de acesso</label>
+        <input id="senha" type="password" autocomplete="current-password">
+      </div>
+
+      <button id="botao-gerar" class="botao botao-primario" type="submit">Gerar aula e prova</button>
+    </form>
+
+    <ol id="progresso" class="progresso" hidden>
+      <li data-etapa="plano">Plano de aula</li>
+      <li data-etapa="slides">Slides</li>
+      <li data-etapa="prova">Prova e conferência do gabarito</li>
+    </ol>
+
+    <p id="erro-geral" class="erro" hidden></p>
+
+    <section id="resultado" hidden>
+      <nav class="abas" role="tablist">
+        <button class="aba ativa" data-aba="plano" role="tab">Plano de aula</button>
+        <button class="aba" data-aba="slides" role="tab">Slides</button>
+        <button class="aba" data-aba="prova" role="tab">Prova</button>
+        <button class="aba" data-aba="gabarito" role="tab">Gabarito</button>
+      </nav>
+
+      <div class="painel cartao" data-painel="plano">
+        <div class="acoes"><button class="botao" data-imprimir="plano">Imprimir / PDF</button></div>
+        <div id="conteudo-plano" class="documento"></div>
+      </div>
+
+      <div class="painel cartao" data-painel="slides" hidden>
+        <div class="acoes">
+          <button class="botao botao-primario" id="botao-apresentar">Apresentar</button>
+          <button class="botao" id="botao-pptx">Baixar .pptx</button>
+        </div>
+        <p class="dica">Na apresentação, aperte <kbd>S</kbd> para abrir as anotações do professor e <kbd>F</kbd> para tela cheia.</p>
+        <div id="conteudo-slides" class="grade-slides"></div>
+      </div>
+
+      <div class="painel cartao" data-painel="prova" hidden>
+        <div class="acoes"><button class="botao" data-imprimir="prova">Imprimir para os alunos</button></div>
+        <div id="conteudo-prova" class="documento"></div>
+      </div>
+
+      <div class="painel cartao" data-painel="gabarito" hidden>
+        <div class="acoes"><button class="botao" data-imprimir="gabarito">Imprimir gabarito</button></div>
+        <div id="aviso-verificacao"></div>
+        <div id="conteudo-gabarito" class="documento"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    Conteúdo gerado por IA. Revise antes de usar em sala.
+  </footer>
+</body>
+</html>
