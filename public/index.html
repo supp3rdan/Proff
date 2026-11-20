@@ -48,6 +48,18 @@
                   placeholder="Ex.: 1 aula de 50 min, exemplos com futebol, prova com 10 questões só de múltipla escolha, turma com dificuldade em frações..."></textarea>
       </div>
 
+      <details class="campo-inteiro config-chaves" id="config-chaves" hidden>
+        <summary>Chaves de API <span id="resumo-chaves" class="opcional"></span></summary>
+        <p class="dica">
+          As chaves ficam salvas só neste navegador e vão direto para o provedor de IA, sem passar por nenhum servidor do Proff.
+          Basta uma, e todas são grátis e sem cartão. Com duas ou mais, a conferência do gabarito usa um modelo diferente.
+        </p>
+        <div id="campos-chaves" class="grade-chaves"></div>
+        <label class="opcao">
+          <input type="checkbox" id="modo-demo"> Modo demonstração (gera uma aula de exemplo, sem chave)
+        </label>
+      </details>
+
       <div class="campo campo-inteiro" id="campo-senha" hidden>
         <label for="senha">Código de acesso</label>
         <input id="senha" type="password" autocomplete="current-password">

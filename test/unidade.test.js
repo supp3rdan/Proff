@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { extrairJSON } from '../lib/llm.js';
-import { validarEntrada, ErroEntrada } from '../lib/gerador.js';
+import { extrairJSON } from '../public/core/llm.js';
+import { validarEntrada, ErroEntrada } from '../public/core/gerador.js';
 import { latexParaTexto } from '../public/pptx.js';
 
 test('extrairJSON conserta LaTeX com barra simples', () => {

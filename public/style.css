@@ -148,3 +148,12 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
   .questao-revisar { background: none; border: none; padding: 0; }
   #aviso-verificacao, .divergencia { display: none; }
 }
+
+/* chaves de API (modo navegador / GitHub Pages) */
+.config-chaves { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 14px; background: var(--fundo); }
+.config-chaves summary { cursor: pointer; font-weight: 600; }
+.config-chaves[open] summary { margin-bottom: 8px; }
+.grade-chaves { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 10px; }
+.grade-chaves label { font-size: .9rem; }
+.grade-chaves a { font-weight: 400; font-size: .85rem; color: var(--azul); }
+.opcao { display: flex; align-items: center; gap: 8px; font-weight: 400; }

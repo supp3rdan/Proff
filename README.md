@@ -24,7 +24,21 @@ formulário ── POST /api/gerar ──▶  1. plano  ────────
 ◀── JSON ── monta plano, slides (Reveal.js + KaTeX), prova e .pptx
 ```
 
-As chaves de API ficam só no servidor. Nada de chave no navegador.
+A lógica de geração (`public/core/`) é a mesma nos dois modos:
+- **com servidor** (`npm run dev` ou Vercel): as chaves ficam no servidor;
+- **sem servidor** (GitHub Pages): o navegador chama a IA direto, com a chave que o professor colou.
+
+## Usar pelo GitHub Pages (sem servidor)
+
+Acesse **https://supp3rdan.github.io/Proff/**.
+
+No Pages não há servidor, então o Proff roda inteiro no navegador:
+
+1. Abra **Chaves de API** e cole pelo menos uma chave (links para criar estão na própria tela).
+2. A chave fica salva **só no seu navegador** e vai direto para o provedor de IA.
+3. Sem chave, marque **Modo demonstração** para ver uma aula de exemplo.
+
+Configuração do Pages: *Settings → Pages → Deploy from a branch → `main` / `(root)`*. O `index.html` da raiz redireciona para `public/`.
 
 ## Rodar no seu computador
 
@@ -56,7 +70,9 @@ Fonte dos limites: [awesome-free-llm-apis](https://github.com/mnfst/awesome-free
 
 > Não envie dados de alunos para as APIs gratuitas.
 
-## Publicar na Vercel
+## Publicar na Vercel (com servidor)
+
+Use a Vercel se quiser que as chaves fiquem no servidor, sem cada professor precisar ter a sua.
 
 1. Importe o repositório em https://vercel.com/new (preset **Other**, sem comando de build).
 2. Em **Settings → Environment Variables**, cadastre as mesmas variáveis do `.env`.
@@ -77,13 +93,16 @@ A pasta `public/` vira o site e cada arquivo de `api/` vira uma função serverl
 ## Estrutura
 
 ```
-api/gerar.js        rota POST /api/gerar (plano, slides ou prova)
-api/status.js       rota GET /api/status (provedores ativos)
-lib/llm.js          cliente único com troca automática de provedor e leitura do JSON
-lib/prompts.js      prompts de plano, slides, prova e conferência
-lib/gerador.js      fluxo de geração e conferência do gabarito
-lib/mock.js         respostas de exemplo do modo simulado
-public/             interface (HTML, CSS e JS puros)
+api/gerar.js           rota POST /api/gerar (plano, slides ou prova)
+api/status.js          rota GET /api/status (o front usa para saber se há servidor)
+lib/ambiente.js        cria o cliente de IA a partir das variáveis de ambiente
+lib/http.js            utilidades HTTP e código de acesso
+public/                interface (HTML, CSS e JS puros)
+public/core/llm.js     cliente único com troca automática de provedor e leitura do JSON
+public/core/prompts.js prompts de plano, slides, prova e conferência
+public/core/gerador.js fluxo de geração e conferência do gabarito
+public/core/mock.js    respostas de exemplo do modo simulado/demonstração
+index.html             redireciona para public/ (GitHub Pages)
 server.js           servidor local de desenvolvimento
 test/               testes (npm test)
 ```

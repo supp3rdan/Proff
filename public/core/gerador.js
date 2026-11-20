@@ -1,4 +1,5 @@
-import { gerarJSON } from './llm.js';
+// Fluxo de geração. Recebe o cliente de IA (criarClienteLLM) como parâmetro,
+// então funciona igual no servidor e no navegador.
 import {
   promptPlano,
   promptSlides,
@@ -22,14 +23,14 @@ export function validarEntrada(corpo) {
   return { serie, assunto, observacoes };
 }
 
-export async function gerarPlano(entrada) {
-  const { dados, provedor } = await gerarJSON({ ...promptPlano(entrada), tarefa: 'plano' });
+export async function gerarPlano(llm, entrada) {
+  const { dados, provedor } = await llm.gerarJSON({ ...promptPlano(entrada), tarefa: 'plano' });
   if (!Array.isArray(dados.etapas)) throw new Error('Plano gerado sem etapas.');
   return { plano: dados, provedor };
 }
 
-export async function gerarSlides(entrada, plano) {
-  const { dados, provedor } = await gerarJSON({ ...promptSlides(entrada, plano), tarefa: 'slides' });
+export async function gerarSlides(llm, entrada, plano) {
+  const { dados, provedor } = await llm.gerarJSON({ ...promptSlides(entrada, plano), tarefa: 'slides' });
   if (!Array.isArray(dados.slides) || dados.slides.length === 0) throw new Error('Nenhum slide gerado.');
   return { slides: dados, provedor };
 }
@@ -39,8 +40,8 @@ export async function gerarSlides(entrada, plano) {
  * provedor) resolve as questões sem ver as respostas. Questões em que as
  * respostas não batem são marcadas para revisão do professor.
  */
-export async function gerarProva(entrada, plano) {
-  const { dados: prova, provedor } = await gerarJSON({
+export async function gerarProva(llm, entrada, plano) {
+  const { dados: prova, provedor } = await llm.gerarJSON({
     ...promptProva(entrada, plano),
     tarefa: 'prova',
   });
@@ -54,7 +55,7 @@ export async function gerarProva(entrada, plano) {
 
   let verificacao;
   try {
-    verificacao = await verificarGabarito(prova.questoes);
+    verificacao = await verificarGabarito(llm, prova.questoes);
   } catch (erro) {
     console.warn('[prova] verificação não concluída:', erro.message);
     verificacao = { concluida: false, motivo: erro.message };
@@ -63,8 +64,8 @@ export async function gerarProva(entrada, plano) {
   return { prova, verificacao, provedor };
 }
 
-async function verificarGabarito(questoes) {
-  const { dados, provedor } = await gerarJSON({
+async function verificarGabarito(llm, questoes) {
+  const { dados, provedor } = await llm.gerarJSON({
     ...promptResolver(questoes),
     tarefa: 'resolver',
     comecarPor: 1,
@@ -88,7 +89,7 @@ async function verificarGabarito(questoes) {
   }
 
   if (discursivas.length) {
-    const { dados: comp } = await gerarJSON({
+    const { dados: comp } = await llm.gerarJSON({
       ...promptComparar(discursivas),
       tarefa: 'comparar',
       temperatura: 0,
