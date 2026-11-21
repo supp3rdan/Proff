@@ -32,3 +32,28 @@ test('latexParaTexto deixa fórmulas legíveis no PowerPoint', () => {
   assert.equal(latexParaTexto('Custa R$ 5,00 e $\\sqrt{16} = 4$'), 'Custa R$ 5,00 e √(16) = 4');
   assert.equal(latexParaTexto('$2{,}5x \\neq 0$'), '2,5x ≠ 0');
 });
+
+test('troca de modelo quando o modelo foi desativado', async () => {
+  const { criarClienteLLM } = await import('../public/core/llm.js');
+  const usados = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, opcoes) => {
+    const { model } = JSON.parse(opcoes.body);
+    usados.push(model);
+    if (model === 'modelo-velho') {
+      return new Response(
+        JSON.stringify([{ error: { code: 404, message: 'This model is no longer available. Please update your code to use models/gemini-9-flash.' } }]),
+        { status: 404 }
+      );
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": true}' } }] }), { status: 200 });
+  };
+  try {
+    const llm = criarClienteLLM({ chaves: { gemini: 'x' }, modelos: { gemini: 'modelo-velho' } });
+    const r = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't' });
+    assert.deepEqual(r.dados, { ok: true });
+    assert.deepEqual(usados, ['modelo-velho', 'gemini-9-flash']);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

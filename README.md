@@ -72,7 +72,7 @@ npm run demo
 
 | Provedor | Onde criar a chave | Observação |
 | --- | --- | --- |
-| Google Gemini | https://aistudio.google.com/app/apikey | Principal. No plano grátis, o Google pode usar os pedidos para melhorar os produtos. |
+| Google Gemini | https://aistudio.google.com/app/apikey | Principal (modelo gemini-3.8-flash; se um modelo for desativado, o Proff tenta outro sozinho). No plano grátis, o Google pode usar os pedidos para melhorar os produtos. |
 | Groq | https://console.groq.com/keys | Muito rápido; limite de 8 mil tokens por minuto. |
 | OpenRouter | https://openrouter.ai/keys | Modelos `:free`, até 50 pedidos por dia. |
 
