@@ -325,7 +325,7 @@ function renderizarSlides() {
       const notas = sec.querySelector('.notes');
       notas?.remove();
       return el('figure', { classe: 'miniatura' }, [
-        el('div', { classe: 'miniatura-slide' }, [...sec.childNodes]),
+        el('div', { classe: `miniatura-slide miniatura-${s.tipo || 'conteudo'}` }, [...sec.childNodes]),
         el('figcaption', {}, [el('strong', { texto: `${i + 1}. ` }), document.createTextNode(s.notas || '')]),
       ]);
     })

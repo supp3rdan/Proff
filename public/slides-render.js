@@ -28,12 +28,26 @@ export function anexar(no, ...filhos) {
 }
 
 export function montarSlide(slide, { fragmentos = true } = {}) {
-  const sec = el('section', { classe: `slide slide-${slide.tipo || 'conteudo'}` });
+  const sec = el('section', {
+    classe: `slide slide-${slide.tipo || 'conteudo'}`,
+    // fundo com a barra azul à esquerda, ocupando a tela inteira (como no .pptx)
+    'data-background-color': slide.tipo === 'capa' ? '#1f4e79' : null,
+    'data-background-gradient':
+      slide.tipo === 'capa'
+        ? null
+        : `linear-gradient(to right, #1f4e79 0, #1f4e79 18px, ${slide.tipo === 'resumo' ? '#f4f8fc' : '#ffffff'} 18px)`,
+  });
   const frag = fragmentos ? 'fragment' : null;
 
   switch (slide.tipo) {
     case 'capa':
-      anexar(sec, el('h1', { texto: slide.titulo }), el('p', { classe: 'subtitulo', texto: slide.subtitulo }));
+      anexar(
+        sec,
+        el('span', { classe: 'capa-rotulo', texto: 'Matemática' }),
+        el('h1', { texto: slide.titulo }),
+        el('p', { classe: 'subtitulo', texto: slide.subtitulo }),
+        el('span', { classe: 'capa-pi', 'aria-hidden': 'true', texto: 'π' })
+      );
       break;
 
     case 'exemplo':

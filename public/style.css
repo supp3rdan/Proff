@@ -126,6 +126,20 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .miniatura-slide ul, .miniatura-slide ol { margin: 0; padding-left: 18px; }
 .miniatura-slide .formula { background: var(--azul-claro); border-radius: 6px; margin-top: 6px; }
 .miniatura-slide .formula .katex-display { margin: 4px 0; }
+.miniatura-slide { position: relative; padding-left: 22px; }
+.miniatura-slide::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--azul); }
+.miniatura-slide h2::after { content: ''; display: block; width: 36px; height: 3px; background: var(--amarelo); border-radius: 2px; margin-top: 3px; }
+.miniatura-capa { background: var(--azul); color: #fff; }
+.miniatura-capa::before { display: none; }
+.miniatura-capa h1 { color: #fff; text-align: left; margin-top: 18%; }
+.miniatura-capa .subtitulo { color: #d6e4f0; text-align: left; }
+.miniatura-capa .capa-rotulo { color: var(--amarelo); font-size: .6rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+.miniatura-slide .capa-pi { position: absolute; right: 8%; top: 12%; font: 90px/1 Georgia, serif; color: var(--amarelo); opacity: .25; }
+.miniatura-resumo { background: #f4f8fc; }
+.miniatura-slide .etiqueta { color: #fff; background: var(--laranja); padding: 1px 8px; border-radius: 999px; font-size: .55rem; }
+.miniatura-slide .etiqueta-exercicio { background: var(--verde); }
+.miniatura-resumo .etiqueta { background: var(--azul); }
+.miniatura-slide .resposta { color: var(--verde); font-weight: 700; }
 .miniatura figcaption { font-size: .82rem; color: var(--suave); margin-top: 6px; }
 .etiqueta { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--laranja); }
 .etiqueta-exercicio { color: var(--verde); }

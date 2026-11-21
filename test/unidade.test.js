@@ -27,7 +27,8 @@ test('validarEntrada', () => {
 });
 
 test('latexParaTexto deixa fórmulas legíveis no PowerPoint', () => {
-  assert.equal(latexParaTexto('$\\frac{a}{b} \\cdot x^2$'), '(a)/(b) · x²');
+  assert.equal(latexParaTexto('$\\frac{a}{b} \\cdot x^2$'), 'a/b · x²');
+  assert.equal(latexParaTexto('$\\frac{x+1}{2}$'), '(x+1)/2');
   assert.equal(latexParaTexto('Custa R$ 5,00 e $\\sqrt{16} = 4$'), 'Custa R$ 5,00 e √(16) = 4');
   assert.equal(latexParaTexto('$2{,}5x \\neq 0$'), '2,5x ≠ 0');
 });

@@ -6,7 +6,8 @@ O professor escolhe a série e o assunto e, se quiser, descreve como prefere a a
 ## O que ele faz
 
 - **Plano de aula**: objetivos, habilidades da BNCC, conhecimentos prévios, recursos, etapas com tempo, avaliação, tarefa e adaptações.
-- **Slides didáticos** com fórmulas bem formatadas (KaTeX), exemplos resolvidos passo a passo, exercícios com resposta revelada e anotações para o professor. Dá para apresentar no navegador (Reveal.js) ou baixar em `.pptx`.
+- **Slides didáticos** com exemplos resolvidos passo a passo, exercícios com resposta revelada e anotações para o professor. Dá para apresentar no navegador (Reveal.js + KaTeX) ou baixar em `.pptx` (pptxgenjs).
+- **A IA só escreve o conteúdo.** O visual dos slides é código do projeto: tema fixo (cores, fontes, barra lateral, etiquetas, passos numerados, cartões de resumo) e um layout para cada tipo de slide. No `.pptx`, as fórmulas em destaque são desenhadas pelo MathJax como imagem nítida, e as fórmulas no meio do texto usam a fonte Cambria Math (continuam editáveis). Cada exercício vira dois slides: o enunciado e, em seguida, a resposta.
 - **Prova** pronta para imprimir e **gabarito** com resolução.
 - **Conferência do gabarito**: uma segunda chamada de IA (de preferência em outro provedor) resolve a prova sem ver as respostas. Se o resultado não bater, a questão aparece marcada para revisão.
 - **Troca automática de provedor**: tenta o Gemini; se der limite ou erro, passa para o Groq e depois para o OpenRouter.
@@ -108,6 +109,9 @@ api/status.js          rota GET /api/status (o front usa para saber se há servi
 lib/ambiente.js        cria o cliente de IA a partir das variáveis de ambiente
 lib/http.js            utilidades HTTP e código de acesso
 public/                interface (HTML, CSS e JS puros)
+public/pptx.js         tema e layouts do .pptx (pptxgenjs)
+public/pptx-matematica.js fórmulas no .pptx (MathJax → imagem, LaTeX → Unicode)
+public/slides-render.js + slides.css  slides no navegador (Reveal.js)
 public/core/llm.js     cliente único com troca automática de provedor e leitura do JSON
 public/core/prompts.js prompts de plano, slides, prova e conferência
 public/core/gerador.js fluxo de geração e conferência do gabarito
@@ -127,5 +131,5 @@ npm test
 
 - IA pode errar conteúdo e contas. A conferência automática reduz, mas **não elimina**, erros: revise antes de usar em sala.
 - Os códigos da BNCC sugeridos devem ser conferidos.
-- No `.pptx`, as fórmulas viram texto simples (ex.: `(a)/(b)`), porque o PowerPoint não lê LaTeX. Na apresentação pelo navegador elas aparecem formatadas.
+- No `.pptx`, as fórmulas no meio do texto viram texto Unicode (ex.: `a/b`, `x²`), porque o PowerPoint não lê LaTeX; as fórmulas em destaque e as linhas que são só fórmula entram como imagem.
 - Os limites gratuitos mudam com frequência; se um provedor parar de responder, o Proff tenta o próximo.
