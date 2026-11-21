@@ -18,6 +18,7 @@ export const PROVEDORES = [
     // Raciocínio curto: os modelos novos "pensam" bastante por padrão e demoram.
     extras: { reasoning_effort: 'low' },
     ondeCriarChave: 'https://aistudio.google.com/app/apikey',
+    prefixos: ['AIza', 'AQ.'],
   },
   {
     nome: 'groq',
@@ -26,6 +27,7 @@ export const PROVEDORES = [
     modelos: ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'],
     extras: { reasoning_effort: 'low' },
     ondeCriarChave: 'https://console.groq.com/keys',
+    prefixos: ['gsk_'],
   },
   {
     nome: 'openrouter',
@@ -33,15 +35,48 @@ export const PROVEDORES = [
     url: 'https://openrouter.ai/api/v1/chat/completions',
     modelos: ['openrouter/free'],
     ondeCriarChave: 'https://openrouter.ai/keys',
+    prefixos: ['sk-or-'],
   },
 ];
 
 export class ErroLLM extends Error {}
 
+/** Descobre de qual provedor é uma chave pelo começo dela (null se não reconhecer). */
+export function provedorDaChave(chave = '') {
+  const c = String(chave).trim();
+  return PROVEDORES.find((p) => p.prefixos?.some((pre) => c.startsWith(pre)))?.nome || null;
+}
+
+/**
+ * Coloca cada chave no provedor certo quando foi colada no campo errado
+ * (ex.: chave "sk-or-..." do OpenRouter no campo do Groq).
+ */
+export function corrigirChaves(chaves = {}) {
+  const certas = {};
+  const avisos = [];
+  for (const [campo, chave] of Object.entries(chaves)) {
+    if (!chave) continue;
+    const dono = provedorDaChave(chave);
+    if (dono && dono !== campo && !chaves[dono]) {
+      certas[dono] = chave;
+      avisos.push({ campo, dono });
+    } else if (!certas[campo]) {
+      certas[campo] = chave;
+    }
+  }
+  return { chaves: certas, avisos };
+}
+
 // Modelo que funcionou por provedor (evita repetir tentativas na mesma sessão).
 const MODELO_QUE_FUNCIONOU = new Map();
 // Provedores que recusaram os parâmetros extras (ex.: reasoning_effort).
 const SEM_EXTRAS = new Set();
+
+/** Esquece o que foi aprendido na sessão (usado nos testes). */
+export function limparCacheDeModelos() {
+  MODELO_QUE_FUNCIONOU.clear();
+  SEM_EXTRAS.clear();
+}
 
 /** Tempo esgotado vira erro legível e faz tentar um modelo mais leve. */
 function erroDeTempo(erro, modelo) {
@@ -69,7 +104,13 @@ export function erroHTTP(status, corpo, modelo) {
   const erro = new Error(`${modelo}: HTTP ${status} ${String(mensagem).slice(0, 160)}`);
   const texto = String(corpo);
   erro.semExtras = status === 400 && /reasoning|thinking|unknown name|unrecognized|invalid argument/i.test(texto);
+  if (status === 401 || status === 403) {
+    erro.message = `${modelo}: chave inválida ou sem permissão (HTTP ${status}). Confira se colou a chave no campo do provedor certo.`;
+  }
+  // sobrecarga/instabilidade do provedor: vale tentar outro modelo
+  const sobrecarga = [500, 502, 503, 504].includes(status) || /high demand|overloaded|unavailable|try again later/i.test(texto);
   erro.trocarModelo =
+    sobrecarga ||
     status === 404 ||
     /no longer available|not found|does not exist|decommissioned|deprecated|not supported/i.test(texto) ||
     (status === 429 && /limit:\s*0\b/.test(texto));

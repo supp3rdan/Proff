@@ -121,3 +121,38 @@ test('organizarAula segue o roteiro padrão e insere os divisores', async () => 
   const r = organizarAula(deck).slides.map((s) => (s.tipo === 'secao' ? `#${s.numero}` : s.titulo));
   assert.deepEqual(r, ['Teste', '#1', 'I1', '#2', 'T1', '#3', 'F1', '#4', 'X1', '#5', 'E1', 'R']);
 });
+
+test('chave colada no campo errado vai para o provedor certo', async () => {
+  const { corrigirChaves, provedorDaChave } = await import('../public/core/llm.js');
+  assert.equal(provedorDaChave('sk-or-v1-abc'), 'openrouter');
+  assert.equal(provedorDaChave('gsk_abc'), 'groq');
+  assert.equal(provedorDaChave('AQ.Ab8abc'), 'gemini');
+  assert.equal(provedorDaChave('AIzaXYZ'), 'gemini');
+  const r = corrigirChaves({ gemini: 'AQ.x', groq: 'sk-or-v1-y' });
+  assert.deepEqual(r.chaves, { gemini: 'AQ.x', openrouter: 'sk-or-v1-y' });
+  assert.deepEqual(r.avisos, [{ campo: 'groq', dono: 'openrouter' }]);
+});
+
+test('modelo sobrecarregado (503) tenta o próximo modelo', async () => {
+  const { criarClienteLLM, limparCacheDeModelos } = await import('../public/core/llm.js');
+  limparCacheDeModelos();
+  const usados = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, opcoes) => {
+    const { model } = JSON.parse(opcoes.body);
+    usados.push(model);
+    if (model === 'cheio') {
+      return new Response(JSON.stringify({ error: { code: 503, message: 'This model is currently experiencing high demand. Please try again later.' } }), { status: 503 });
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": 3}' } }] }), { status: 200 });
+  };
+  try {
+    const llm = criarClienteLLM({ chaves: { gemini: 'x' }, modelos: { gemini: 'cheio' } });
+    const r = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't' });
+    assert.deepEqual(r.dados, { ok: 3 });
+    assert.equal(usados[0], 'cheio');
+    assert.equal(usados.length, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

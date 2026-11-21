@@ -194,3 +194,4 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .miniatura-slide .destaque { background: #fdf1e6; border-left: 4px solid var(--laranja); border-radius: 6px; padding: 3px 8px; margin-top: 6px; }
 .miniatura-slide .destaque strong { display: block; color: var(--laranja); font-size: .55rem; text-transform: uppercase; letter-spacing: .08em; }
 .miniatura-slide .destaque p { margin: 0; font-weight: 600; }
+.aviso-chave { color: #8a4b0c; font-size: .8rem; }

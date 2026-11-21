@@ -1,7 +1,7 @@
 import { ASSUNTOS } from './assuntos.js?v=__VERSAO__';
 import { el, anexar, montarSlide, renderizarMatematica } from './slides-render.js?v=__VERSAO__';
 import { exportarPptx } from './pptx.js?v=__VERSAO__';
-import { criarClienteLLM, PROVEDORES } from './core/llm.js?v=__VERSAO__';
+import { criarClienteLLM, PROVEDORES, corrigirChaves, provedorDaChave } from './core/llm.js?v=__VERSAO__';
 import { gerarPlano, gerarSlides, gerarProva, validarEntrada } from './core/gerador.js?v=__VERSAO__';
 
 const CHAVE_ULTIMA = 'proff:ultima';
@@ -70,7 +70,22 @@ function lerConfigNavegador() {
 /** Chaves do professor, se ele colou alguma; senão, as chaves padrão do projeto. */
 function chavesEfetivas(config) {
   const proprias = Object.keys(config.chaves).length > 0;
-  return { chaves: proprias ? config.chaves : chavesPadrao(), proprias };
+  const { chaves } = corrigirChaves(proprias ? config.chaves : chavesPadrao());
+  return { chaves, proprias };
+}
+
+/** Aviso embaixo do campo quando a chave parece ser de outro provedor. */
+function avisarChaveTrocada(campo) {
+  const valor = $(`#chave-${campo}`).value.trim();
+  const dono = provedorDaChave(valor);
+  const aviso = $(`#aviso-chave-${campo}`);
+  if (valor && dono && dono !== campo) {
+    const rotulo = PROVEDORES.find((p) => p.nome === dono).rotulo;
+    aviso.textContent = `Esta chave é do ${rotulo}. Ela será usada como chave do ${rotulo}.`;
+    aviso.hidden = false;
+  } else {
+    aviso.hidden = true;
+  }
 }
 
 function montarConfigChaves() {
@@ -84,8 +99,9 @@ function montarConfigChaves() {
         el('label', { for: `chave-${p.nome}`, texto: p.rotulo }),
         el('input', {
           id: `chave-${p.nome}`, type: 'password', autocomplete: 'off', spellcheck: 'false',
-          placeholder: 'cole a sua chave aqui', value: config.chaves[p.nome] || '',
+          placeholder: `começa com ${p.prefixos.join(' ou ')}`, value: config.chaves[p.nome] || '',
         }),
+        el('small', { id: `aviso-chave-${p.nome}`, classe: 'aviso-chave', hidden: true }),
       ])
     )
   );
@@ -98,6 +114,7 @@ function montarConfigChaves() {
       if (v) nova.chaves[p.nome] = v;
     }
     armazenamento.gravar(CHAVE_CONFIG, nova);
+    PROVEDORES.forEach((p) => avisarChaveTrocada(p.nome));
     resumirConfig(nova);
   };
   painel.addEventListener('input', salvar);
@@ -108,6 +125,7 @@ function montarConfigChaves() {
     salvar();
   });
 
+  PROVEDORES.forEach((p) => avisarChaveTrocada(p.nome));
   resumirConfig(config);
   const { chaves } = chavesEfetivas(config);
   if (!config.demo && Object.keys(chaves).length === 0) painel.open = true;
