@@ -41,9 +41,12 @@ jobs:
       - name: Gerar config.js com as chaves padrão
         run: node scripts/gerar-config.js
         env:
+          # Aceita os nomes padrão e os que já estão cadastrados no repositório.
+          # Se uma chave estiver no nome errado, gerar-config.js a reconhece
+          # pelo começo (AIza/AQ. = Gemini, gsk_ = Groq, sk-or- = OpenRouter).
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY || secrets.GROK_API_SECRET_TRUE || secrets.GROQ_API_SECRET_TRUE }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY || secrets.API_KEY_GROQ }}
       # Versão nos endereços dos arquivos (app.js?v=abc1234): cada publicação
       # obriga o navegador a baixar os arquivos novos em vez de usar o cache.
       - name: Marcar versão nos arquivos
