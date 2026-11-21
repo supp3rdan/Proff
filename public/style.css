@@ -185,3 +185,12 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .passos { padding-left: 22px; }
 .passos li { margin-bottom: 6px; }
 .versao { font-size: .75rem; opacity: .7; }
+.miniatura-secao { background: #163a5c; color: #fff; }
+.miniatura-secao::before { display: none; }
+.miniatura-secao h1 { color: #fff; text-align: left; margin: 2% 0 4px; }
+.miniatura-secao .subtitulo { color: #d6e4f0; text-align: left; }
+.miniatura-slide .secao-numero { display: block; margin-top: 12%; font: 700 2rem/1 Georgia, serif; color: var(--amarelo); }
+.miniatura-slide .etiqueta-secao { background: #2b6299; }
+.miniatura-slide .destaque { background: #fdf1e6; border-left: 4px solid var(--laranja); border-radius: 6px; padding: 3px 8px; margin-top: 6px; }
+.miniatura-slide .destaque strong { display: block; color: var(--laranja); font-size: .55rem; text-transform: uppercase; letter-spacing: .08em; }
+.miniatura-slide .destaque p { margin: 0; font-weight: 600; }

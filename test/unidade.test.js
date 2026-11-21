@@ -104,3 +104,20 @@ test('tempo esgotado tenta o próximo modelo', async () => {
     globalThis.fetch = original;
   }
 });
+
+test('organizarAula segue o roteiro padrão e insere os divisores', async () => {
+  const { organizarAula } = await import('../public/core/estrutura.js');
+  const deck = {
+    titulo: 'Teste',
+    slides: [
+      { tipo: 'exercicio', titulo: 'E1', secao: 'teoria' }, // exercício fora do lugar
+      { tipo: 'conteudo', titulo: 'F1', formula: 'x' }, // sem seção: vira fórmulas
+      { tipo: 'resumo', titulo: 'R' },
+      { tipo: 'conteudo', titulo: 'T1', secao: 'teoria' },
+      { tipo: 'conteudo', titulo: 'I1', secao: 'introducao' },
+      { tipo: 'exemplo', titulo: 'X1', secao: 'introducao' }, // exemplo vai para aplicações
+    ],
+  };
+  const r = organizarAula(deck).slides.map((s) => (s.tipo === 'secao' ? `#${s.numero}` : s.titulo));
+  assert.deepEqual(r, ['Teste', '#1', 'I1', '#2', 'T1', '#3', 'F1', '#4', 'X1', '#5', 'E1', 'R']);
+});

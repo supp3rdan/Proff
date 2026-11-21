@@ -82,3 +82,24 @@
   content: '✓'; left: .6em; top: 50%; transform: translateY(-50%); width: 1.25em; height: 1.25em; border-radius: 50%;
   background: var(--verde); color: #fff; font-size: .8em; font-weight: 700; display: grid; place-items: center;
 }
+
+/* divisor de seção (criado pelo código) */
+.reveal .slide-secao { color: #fff; display: flex !important; flex-direction: column; justify-content: center; }
+.reveal .secao-numero { font: 700 3.4em/1 Georgia, serif; color: var(--amarelo); }
+.reveal .secao-numero::after {
+  content: ''; display: block; width: 130px; height: 9px; background: var(--amarelo); border-radius: 4px; margin: .25em 0 .1em;
+}
+.reveal .slide-secao h1 { color: #fff; font-size: 2.3em; margin: .2em 0 .2em; }
+.reveal .slide-secao .subtitulo { color: #d6e4f0; font-size: 1em; }
+
+/* etiqueta com o nome da parte da aula */
+.reveal .etiqueta-secao { background: #2b6299; }
+
+/* ideia-chave da teoria */
+.reveal .destaque {
+  margin-top: .8em; background: #fdf1e6; border-left: 10px solid var(--laranja); border-radius: 14px; padding: .45em 1em;
+}
+.reveal .destaque strong {
+  display: block; color: var(--laranja); font-size: .5em; letter-spacing: .1em; text-transform: uppercase;
+}
+.reveal .destaque p { margin: .15em 0 0; font-weight: 600; }

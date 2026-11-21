@@ -5,6 +5,17 @@ O professor escolhe a série e o assunto e, se quiser, descreve como prefere a a
 
 ## O que ele faz
 
+Toda aula segue o mesmo roteiro, definido em `public/core/estrutura.js`:
+
+1. **Introdução**: situação do cotidiano, curiosidade e onde o assunto aparece.
+2. **Entendendo a ideia**: teoria didática e simples, em palavras, **antes** das fórmulas, com a ideia-chave em destaque.
+3. **Fórmulas**: a ideia escrita em linguagem matemática, com o significado de cada termo.
+4. **Aplicações**: exemplos resolvidos passo a passo.
+5. **Hora de praticar**: exercícios para a turma.
+6. **Resumo**.
+
+A IA escreve o conteúdo de cada parte; o código garante a ordem, corrige slides fora do lugar e cria os slides de abertura de cada parte.
+
 - **Plano de aula**: objetivos, habilidades da BNCC, conhecimentos prévios, recursos, etapas com tempo, avaliação, tarefa e adaptações.
 - **Slides didáticos** com exemplos resolvidos passo a passo, exercícios com resposta revelada e anotações para o professor. Dá para apresentar no navegador (Reveal.js + KaTeX) ou baixar em `.pptx` (pptxgenjs).
 - **A IA só escreve o conteúdo.** O visual dos slides é código do projeto: tema fixo (cores, fontes, barra lateral, etiquetas, passos numerados, cartões de resumo) e um layout para cada tipo de slide. No `.pptx`, as fórmulas em destaque são desenhadas pelo MathJax como imagem nítida, e as fórmulas no meio do texto usam a fonte Cambria Math (continuam editáveis). Cada exercício vira dois slides: o enunciado e, em seguida, a resposta.
@@ -113,6 +124,7 @@ public/pptx.js         tema e layouts do .pptx (pptxgenjs)
 public/pptx-matematica.js fórmulas no .pptx (MathJax → imagem, LaTeX → Unicode)
 public/slides-render.js + slides.css  slides no navegador (Reveal.js)
 public/core/llm.js     cliente único com troca automática de provedor e leitura do JSON
+public/core/estrutura.js roteiro padrão da aula e organização dos slides
 public/core/prompts.js prompts de plano, slides, prova e conferência
 public/core/gerador.js fluxo de geração e conferência do gabarito
 public/core/mock.js    respostas de exemplo do modo simulado/demonstração

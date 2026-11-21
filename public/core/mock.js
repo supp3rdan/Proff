@@ -16,11 +16,12 @@ const PLANO = String.raw`{
   "conhecimentos_previos": ["Plano cartesiano", "Equações do 1º grau"],
   "recursos": ["Quadro", "Projetor", "Papel quadriculado"],
   "etapas": [
-    { "nome": "Problematização", "duracao": "10 min", "descricao": "Conta de táxi: bandeirada fixa mais valor por quilômetro." },
-    { "nome": "Conceito", "duracao": "25 min", "descricao": "Definição de função afim e papel dos coeficientes." },
-    { "nome": "Gráfico", "duracao": "30 min", "descricao": "Construção do gráfico a partir de dois pontos." },
-    { "nome": "Prática", "duracao": "30 min", "descricao": "Exercícios em duplas com correção coletiva." },
-    { "nome": "Fechamento", "duracao": "5 min", "descricao": "Síntese e tarefa de casa." }
+    { "nome": "Introdução ao assunto", "duracao": "10 min", "descricao": "Conta de táxi e de aplicativo: quanto pagamos por uma corrida? Os alunos estimam valores." },
+    { "nome": "Explanação teórica", "duracao": "20 min", "descricao": "Ideia de grandeza que depende de outra, valor fixo e valor que cresce sempre do mesmo jeito, em palavras e com tabelas." },
+    { "nome": "Fórmulas e propriedades", "duracao": "20 min", "descricao": "Lei de formação $f(x) = ax + b$, significado de $a$ e $b$, raiz e crescimento." },
+    { "nome": "Aplicações e exemplos resolvidos", "duracao": "20 min", "descricao": "Dois exemplos resolvidos no quadro, um direto e um contextualizado." },
+    { "nome": "Prática", "duracao": "20 min", "descricao": "Exercícios em duplas com correção coletiva." },
+    { "nome": "Fechamento", "duracao": "10 min", "descricao": "Resumo das ideias principais e tarefa de casa." }
   ],
   "avaliacao": "Observação da participação e correção dos exercícios em duplas.",
   "tarefa_casa": "Pesquisar uma situação do dia a dia que possa ser modelada por uma função afim.",
@@ -31,13 +32,16 @@ const SLIDES = String.raw`{
   "titulo": "Função afim",
   "slides": [
     { "tipo": "capa", "titulo": "Função afim", "subtitulo": "1º ano do Ensino Médio", "notas": "Pergunte quem já pegou táxi ou aplicativo de transporte." },
-    { "tipo": "conteudo", "titulo": "Quanto custa a corrida?", "topicos": ["Bandeirada: R$ 5,00", "Cada km: R$ 2,50", "Quanto pago por 10 km?"], "notas": "Deixe a turma tentar antes de mostrar a fórmula." },
-    { "tipo": "conteudo", "titulo": "Lei de formação", "topicos": ["$a$ é a taxa de variação", "$b$ é o valor inicial", "No táxi: $a = 2{,}5$ e $b = 5$"], "formula": "f(x) = ax + b", "notas": "Relacione cada coeficiente com o problema do táxi." },
-    { "tipo": "exemplo", "titulo": "Exemplo 1", "enunciado": "Calcule $f(10)$ para $f(x) = 2{,}5x + 5$.", "passos": ["Substitua $x$ por 10: $f(10) = 2{,}5 \cdot 10 + 5$", "Multiplique: $25 + 5$", "Some: $f(10) = 30$"], "resposta": "R$ 30,00", "notas": "Mostre que o resultado responde à pergunta inicial." },
-    { "tipo": "conteudo", "titulo": "Crescente ou decrescente?", "topicos": ["$a > 0$: crescente", "$a < 0$: decrescente", "$a \neq 0$ sempre"], "formula": "a = \frac{\Delta y}{\Delta x}", "notas": "Desenhe as duas retas no quadro." },
-    { "tipo": "exemplo", "titulo": "Exemplo 2", "enunciado": "Ache a raiz de $f(x) = 3x - 6$.", "passos": ["Faça $f(x) = 0$: $3x - 6 = 0$", "Isole $x$: $3x = 6$", "Divida: $x = 2$"], "resposta": "$x = 2$", "notas": "A raiz é onde a reta corta o eixo $x$." },
-    { "tipo": "exercicio", "titulo": "Sua vez!", "enunciado": "Para $f(x) = -2x + 8$, calcule $f(3)$.", "resposta": "$f(3) = 2$", "notas": "Dê 3 minutos e peça que comparem com o colega." },
-    { "tipo": "exercicio", "titulo": "Desafio", "enunciado": "Qual a raiz de $g(x) = 4x + 2$?", "resposta": "$x = -\frac{1}{2}$", "notas": "Atenção ao sinal negativo." },
+    { "tipo": "conteudo", "secao": "introducao", "titulo": "Quanto custa a corrida?", "topicos": ["Bandeirada: R$ 5,00", "Cada km: R$ 2,50", "Quanto pago por 10 km? E por 20 km?"], "notas": "Deixe a turma estimar antes de calcular." },
+    { "tipo": "conteudo", "secao": "introducao", "titulo": "Onde isso aparece?", "topicos": ["Conta de luz e de água", "Salário com comissão", "Plano de celular"], "destaque": "Sempre que há um valor fixo mais um valor que cresce por unidade.", "notas": "Peça outros exemplos aos alunos." },
+    { "tipo": "conteudo", "secao": "teoria", "titulo": "Uma coisa depende da outra", "topicos": ["O preço depende da distância", "Mais km, mais caro", "Cada km a mais soma sempre o mesmo valor"], "destaque": "O preço varia de forma constante com a distância.", "notas": "Monte uma tabela km × preço no quadro." },
+    { "tipo": "conteudo", "secao": "teoria", "titulo": "Parte fixa e parte que varia", "topicos": ["Parte fixa: paga mesmo sem andar", "Parte variável: depende de quantos km", "Preço = fixo + variável"], "destaque": "Toda função afim tem um valor inicial e uma taxa de variação.", "notas": "Ainda sem letras: só a ideia." },
+    { "tipo": "conteudo", "secao": "formulas", "titulo": "Lei de formação", "topicos": ["$a$ é a taxa de variação", "$b$ é o valor inicial", "No táxi: $a = 2{,}5$ e $b = 5$"], "formula": "f(x) = ax + b", "notas": "Relacione cada letra com a ideia de parte fixa e parte variável." },
+    { "tipo": "conteudo", "secao": "formulas", "titulo": "Crescente ou decrescente?", "topicos": ["$a > 0$: crescente", "$a < 0$: decrescente", "Raiz: onde $f(x) = 0$"], "formula": "x = -\frac{b}{a}", "notas": "Desenhe as duas retas no quadro." },
+    { "tipo": "exemplo", "secao": "aplicacoes", "titulo": "Exemplo 1", "enunciado": "Calcule $f(10)$ para $f(x) = 2{,}5x + 5$.", "passos": ["Substitua $x$ por 10: $f(10) = 2{,}5 \cdot 10 + 5$", "Multiplique: $25 + 5$", "Some: $f(10) = 30$"], "resposta": "R$ 30,00", "notas": "Mostre que o resultado responde à pergunta inicial." },
+    { "tipo": "exemplo", "secao": "aplicacoes", "titulo": "Exemplo 2", "enunciado": "Ache a raiz de $f(x) = 3x - 6$.", "passos": ["Faça $f(x) = 0$: $3x - 6 = 0$", "Isole $x$: $3x = 6$", "Divida: $x = 2$"], "resposta": "$x = 2$", "notas": "A raiz é onde a reta corta o eixo $x$." },
+    { "tipo": "exercicio", "secao": "pratica", "titulo": "Sua vez!", "enunciado": "Para $f(x) = -2x + 8$, calcule $f(3)$.", "resposta": "$f(3) = 2$", "notas": "Dê 3 minutos e peça que comparem com o colega." },
+    { "tipo": "exercicio", "secao": "pratica", "titulo": "Desafio", "enunciado": "Qual a raiz de $g(x) = 4x + 2$?", "resposta": "$x = -\frac{1}{2}$", "notas": "Atenção ao sinal negativo." },
     { "tipo": "resumo", "titulo": "Resumo", "topicos": ["$f(x) = ax + b$", "$a$: taxa de variação; $b$: valor inicial", "Raiz: $x = -\frac{b}{a}$"], "notas": "Passe a tarefa de casa." }
   ]
 }`;

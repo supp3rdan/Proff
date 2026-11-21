@@ -1,6 +1,8 @@
 // Prompts do Proff. Cada função devolve { sistema, usuario }.
 // Todas as respostas são pedidas em JSON para o front montar plano, slides e prova.
 
+import { roteiroParaPrompt, ETAPAS_DO_PLANO } from './estrutura.js?v=__VERSAO__';
+
 const REGRAS_GERAIS = `Você é um professor experiente de Matemática do Ensino Médio no Brasil, alinhado à BNCC.
 Escreva em português do Brasil, com linguagem clara e adequada à série indicada.
 Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois e sem blocos de código.
@@ -24,6 +26,13 @@ export function promptPlano(entrada) {
 
 Crie um plano de aula completo. Se o professor não indicar a duração, considere 2 aulas de 50 minutos.
 Cite códigos de habilidades da BNCC (formato EM13MATxxx) somente quando tiver certeza de que correspondem ao assunto.
+
+A aula segue SEMPRE este roteiro, nesta ordem:
+${roteiroParaPrompt()}
+6. Fechamento: resumo das ideias principais e tarefa.
+
+Em "etapas", use exatamente estas etapas, nesta ordem e com estes nomes: ${ETAPAS_DO_PLANO.map((e) => `"${e}"`).join(', ')}.
+Distribua o tempo entre elas e descreva em cada uma o que o professor faz e o que os alunos fazem.
 
 Formato do JSON:
 {
@@ -49,26 +58,28 @@ export function promptSlides(entrada, plano) {
 Plano de aula já aprovado:
 ${JSON.stringify(plano)}
 
-Crie os slides desta aula, bem didáticos, seguindo a sequência das etapas do plano.
+Crie os slides desta aula, bem didáticos, seguindo SEMPRE este roteiro, nesta ordem:
+${roteiroParaPrompt()}
+
 Regras:
-- Entre 10 e 16 slides.
-- O primeiro slide é do tipo "capa"; o último é do tipo "resumo".
-- Pouco texto por slide: no máximo 4 tópicos curtos.
-- Inclua uma situação do cotidiano para motivar o assunto, pelo menos 2 exemplos resolvidos passo a passo e pelo menos 2 exercícios para a turma (com a resposta).
+- O primeiro slide é do tipo "capa" e o último é do tipo "resumo". Não crie slides de título de seção (o sistema cria).
+- Cada slide (menos capa e resumo) tem o campo "secao" com uma destas: "introducao", "teoria", "formulas", "aplicacoes", "pratica".
+- Pouco texto por slide: no máximo 4 tópicos curtos, em linguagem simples para a série.
+- A teoria vem antes das fórmulas: primeiro o aluno entende a ideia, depois vê como escrevê-la.
 - Em "notas", escreva o que o professor pode falar ou perguntar naquele slide.
 
 Tipos de slide e campos:
 - "capa": titulo, subtitulo
-- "conteudo": titulo, topicos (lista), formula (opcional, LaTeX sem $)
-- "exemplo": titulo, enunciado, passos (lista em ordem), resposta
-- "exercicio": titulo, enunciado, resposta
+- "conteudo": secao, titulo, topicos (lista), destaque (opcional: a ideia-chave em uma frase curta), formula (opcional, LaTeX sem $; só nas seções "formulas" e "aplicacoes")
+- "exemplo": secao, titulo, enunciado, passos (lista em ordem), resposta
+- "exercicio": secao, titulo, enunciado, resposta
 - "resumo": titulo, topicos
 
 Formato do JSON:
 {
   "titulo": "string",
   "slides": [
-    { "tipo": "capa|conteudo|exemplo|exercicio|resumo", "titulo": "string", "...campos do tipo": "...", "notas": "string" }
+    { "tipo": "capa|conteudo|exemplo|exercicio|resumo", "secao": "introducao|teoria|formulas|aplicacoes|pratica", "titulo": "string", "...campos do tipo": "...", "notas": "string" }
   ]
 }`,
   };

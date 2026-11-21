@@ -7,6 +7,7 @@ import {
   promptResolver,
   promptComparar,
 } from './prompts.js?v=__VERSAO__';
+import { organizarAula } from './estrutura.js?v=__VERSAO__';
 
 export class ErroEntrada extends Error {}
 
@@ -32,7 +33,8 @@ export async function gerarPlano(llm, entrada) {
 export async function gerarSlides(llm, entrada, plano) {
   const { dados, provedor } = await llm.gerarJSON({ ...promptSlides(entrada, plano), tarefa: 'slides' });
   if (!Array.isArray(dados.slides) || dados.slides.length === 0) throw new Error('Nenhum slide gerado.');
-  return { slides: dados, provedor };
+  // ordem padrão e divisores de seção são aplicados por código, não pela IA
+  return { slides: organizarAula(dados), provedor };
 }
 
 /**

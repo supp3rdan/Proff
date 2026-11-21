@@ -5,6 +5,7 @@
 // arquivo é gerado por ela. As cores seguem as da interface (style.css/slides.css).
 
 import { latexParaTexto, segmentar, soMatematica, formulaParaImagem } from './pptx-matematica.js?v=__VERSAO__';
+import { SECOES } from './core/estrutura.js?v=__VERSAO__';
 
 export { latexParaTexto };
 
@@ -178,12 +179,22 @@ function slideCapa(pptx, deck, s, entrada) {
 async function slideConteudo(pptx, s, ctx) {
   const slide = pptx.addSlide();
   moldura(pptx, slide, ctx);
-  let y = titulo(pptx, slide, s.titulo);
+  const secao = SECOES.find((x) => x.id === s.secao);
+  if (secao) etiqueta(pptx, slide, secao.titulo, C.azulMedio);
+  let y = titulo(pptx, slide, s.titulo, { comEtiqueta: Boolean(secao) });
+
+  // reserva espaço embaixo para a fórmula e/ou a ideia-chave
+  const H_FORMULA = 1.55;
+  const H_DESTAQUE = 1.05;
+  let base = H - 0.85;
+  const yFormula = s.formula ? (base -= H_FORMULA) : null;
+  if (s.formula && s.destaque) base -= 0.2;
+  const yDestaque = s.destaque ? (base -= H_DESTAQUE) : null;
+  const fim = base - 0.1;
 
   const topicos = s.topicos || [];
-  const fim = s.formula ? H - 2.55 : H - 0.95;
   const altura = topicos.length ? Math.min(1.15, (fim - y) / topicos.length) : 0;
-  const tamanho = Math.min(...topicos.map((t) => fonte(t, topicos.length <= 3 ? 30 : 26)), 30);
+  const tamanho = Math.min(...topicos.map((t) => fonte(t, topicos.length <= 3 ? 30 : 26)), altura < 0.75 ? 22 : 30);
 
   for (const t of topicos) {
     slide.addShape(pptx.ShapeType.rect, {
@@ -192,8 +203,45 @@ async function slideConteudo(pptx, s, ctx) {
     await linha(slide, t, { x: M + 0.4, y, w: LARGURA - 0.4, h: altura, tamanho });
     y += altura;
   }
-  if (s.formula) await caixaFormula(pptx, slide, s.formula, { y: H - 2.4, h: 1.55 });
+  if (s.destaque) caixaDestaque(pptx, slide, s.destaque, { y: yDestaque, h: H_DESTAQUE });
+  if (s.formula) await caixaFormula(pptx, slide, s.formula, { y: yFormula, h: H_FORMULA });
   if (s.notas) slide.addNotes(latexParaTexto(s.notas));
+}
+
+/** Ideia-chave da teoria: caixa laranja-clara com rótulo. */
+function caixaDestaque(pptx, slide, texto, { y, h }) {
+  slide.addShape(pptx.ShapeType.roundRect, {
+    x: M, y, w: LARGURA, h, fill: { color: C.laranjaClaro }, line: { color: C.laranjaClaro }, rectRadius: 0.12,
+  });
+  slide.addShape(pptx.ShapeType.rect, { x: M, y: y + 0.15, w: 0.08, h: h - 0.3, fill: { color: C.laranja }, line: { color: C.laranja } });
+  slide.addText('IDEIA-CHAVE', {
+    x: M + 0.35, y: y + 0.1, w: 4, h: 0.3, fontFace: F.texto, fontSize: 11, bold: true, color: C.laranja, charSpacing: 2, margin: 0,
+  });
+  slide.addText(runs(texto, { bold: true, color: C.texto }), {
+    x: M + 0.35, y: y + 0.38, w: LARGURA - 0.7, h: h - 0.48, fontSize: fonte(texto, 22), valign: 'middle', margin: 0, fit: 'shrink',
+  });
+}
+
+/** Divisor de seção (criado pelo código, não pela IA). */
+function slideSecao(pptx, s, { indice, total }) {
+  const slide = pptx.addSlide();
+  slide.background = { color: C.azulEscuro };
+  slide.addShape(pptx.ShapeType.ellipse, {
+    x: 9.2, y: 3.2, w: 6, h: 6, fill: { color: C.azulMedio, transparency: 60 }, line: { color: C.azulEscuro, transparency: 100 },
+  });
+  slide.addText(String(s.numero).padStart(2, '0'), {
+    x: 0.9, y: 1.3, w: 4, h: 1.6, fontFace: F.destaque, fontSize: 96, bold: true, color: C.amarelo, margin: 0, valign: 'bottom',
+  });
+  slide.addShape(pptx.ShapeType.rect, { x: 0.9, y: 3.05, w: 1.4, h: 0.1, fill: { color: C.amarelo }, line: { color: C.amarelo } });
+  slide.addText(s.titulo, {
+    x: 0.9, y: 3.3, w: 10, h: 1.1, fontFace: F.titulo, fontSize: 44, bold: true, color: C.branco, margin: 0, valign: 'top',
+  });
+  slide.addText(s.subtitulo || '', {
+    x: 0.9, y: 4.45, w: 10, h: 0.7, fontFace: F.texto, fontSize: 22, color: 'D6E4F0', margin: 0, valign: 'top',
+  });
+  slide.addText(`${indice} / ${total}`, {
+    x: W - 2.2, y: H - 0.55, w: 1.5, h: 0.35, fontFace: F.texto, fontSize: 10, color: '9FBAD3', align: 'right', margin: 0,
+  });
 }
 
 async function slideExemplo(pptx, s, ctx) {
@@ -318,6 +366,9 @@ export async function exportarPptx(deck, entrada) {
       case 'capa':
         indice++;
         slideCapa(pptx, deck, s, entrada);
+        break;
+      case 'secao':
+        slideSecao(pptx, s, ctx());
         break;
       case 'exemplo':
         await slideExemplo(pptx, s, ctx());

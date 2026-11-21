@@ -2,6 +2,10 @@
 // Usado tanto na pré-visualização quanto na apresentação.
 // Todo texto entra via textContent (nunca innerHTML) para evitar HTML injetado.
 
+import { SECOES } from './core/estrutura.js?v=__VERSAO__';
+
+const nomeDaSecao = (id) => SECOES.find((s) => s.id === id)?.titulo;
+
 export function el(tag, atributos = {}, filhos = []) {
   const no = document.createElement(tag);
   for (const [k, v] of Object.entries(atributos)) {
@@ -31,9 +35,9 @@ export function montarSlide(slide, { fragmentos = true } = {}) {
   const sec = el('section', {
     classe: `slide slide-${slide.tipo || 'conteudo'}`,
     // fundo com a barra azul à esquerda, ocupando a tela inteira (como no .pptx)
-    'data-background-color': slide.tipo === 'capa' ? '#1f4e79' : null,
+    'data-background-color': { capa: '#1f4e79', secao: '#163a5c' }[slide.tipo] || null,
     'data-background-gradient':
-      slide.tipo === 'capa'
+      slide.tipo === 'capa' || slide.tipo === 'secao'
         ? null
         : `linear-gradient(to right, #1f4e79 0, #1f4e79 18px, ${slide.tipo === 'resumo' ? '#f4f8fc' : '#ffffff'} 18px)`,
   });
@@ -47,6 +51,15 @@ export function montarSlide(slide, { fragmentos = true } = {}) {
         el('h1', { texto: slide.titulo }),
         el('p', { classe: 'subtitulo', texto: slide.subtitulo }),
         el('span', { classe: 'capa-pi', 'aria-hidden': 'true', texto: 'π' })
+      );
+      break;
+
+    case 'secao': // divisor criado pelo código (estrutura.js)
+      anexar(
+        sec,
+        el('span', { classe: 'secao-numero', texto: String(slide.numero).padStart(2, '0') }),
+        el('h1', { texto: slide.titulo }),
+        el('p', { classe: 'subtitulo', texto: slide.subtitulo })
       );
       break;
 
@@ -70,10 +83,16 @@ export function montarSlide(slide, { fragmentos = true } = {}) {
       break;
 
     default: // conteudo e resumo
-      anexar(sec, 
-        slide.tipo === 'resumo' ? el('span', { classe: 'etiqueta', texto: 'Resumo' }) : null,
+      anexar(
+        sec,
+        slide.tipo === 'resumo'
+          ? el('span', { classe: 'etiqueta', texto: 'Resumo' })
+          : nomeDaSecao(slide.secao)
+            ? el('span', { classe: 'etiqueta etiqueta-secao', texto: nomeDaSecao(slide.secao) })
+            : null,
         el('h2', { texto: slide.titulo }),
         lista(slide.topicos, false, fragmentos),
+        slide.destaque ? el('div', { classe: `destaque ${frag || ''}` }, [el('strong', { texto: 'Ideia-chave' }), el('p', { texto: slide.destaque })]) : null,
         slide.formula ? el('div', { classe: 'formula', texto: `$$${slide.formula}$$` }) : null
       );
   }
