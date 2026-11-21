@@ -81,6 +81,7 @@
         <button class="aba" data-aba="slides" role="tab">Slides</button>
         <button class="aba" data-aba="prova" role="tab">Avaliação</button>
         <button class="aba" data-aba="gabarito" role="tab">Gabarito</button>
+        <button class="aba" data-aba="interativa" role="tab">Aula interativa</button>
       </nav>
 
       <div class="painel cartao" data-painel="plano">
@@ -110,6 +111,15 @@
         <div class="acoes"><button class="botao" id="botao-imprimir-gabarito" data-imprimir="gabarito" hidden>Imprimir gabarito</button></div>
         <div id="aviso-verificacao"></div>
         <div id="conteudo-gabarito" class="documento"></div>
+      </div>
+      <div class="painel cartao" data-painel="interativa" hidden>
+        <div class="acoes">
+          <button class="botao botao-primario botao-gerar" id="botao-gerar-interativa">Gerar aula interativa</button>
+          <button class="botao botao-primario" id="botao-abrir-interativa" hidden>Abrir em nova aba</button>
+          <button class="botao" id="botao-baixar-interativa" hidden>Baixar .html</button>
+        </div>
+        <p class="dica" id="dica-interativa"></p>
+        <iframe id="previa-interativa" class="previa-interativa" title="Prévia da aula interativa" sandbox="allow-scripts allow-popups" hidden></iframe>
       </div>
     </section>
   </main>

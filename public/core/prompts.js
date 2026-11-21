@@ -7,6 +7,7 @@
 //   prova:  questões objetivas → questões discursivas → conferência do gabarito
 
 import { SECOES, roteiroParaPrompt, ETAPAS_DO_PLANO } from './estrutura.js?v=__VERSAO__';
+import { CATALOGO_VISUALIZACOES } from './interativa.js?v=__VERSAO__';
 
 const REGRAS_GERAIS = `Você é um professor experiente de Matemática do Ensino Médio no Brasil, alinhado à BNCC.
 Escreva em português do Brasil, com linguagem clara e adequada à série indicada.
@@ -214,5 +215,94 @@ ${JSON.stringify(pares)}
 
 Formato do JSON:
 { "comparacoes": [{ "numero": 1, "equivalentes": true }] }`,
+  };
+}
+
+
+// ---------- aula interativa (página HTML) ----------
+
+const ARTIGO_POR_SECAO = {
+  introducao: `"paragrafos": 2 a 3 parágrafos que contextualizam o tema e despertam curiosidade. "caixas": 1 caixa "curiosidade".`,
+  teoria: `"paragrafos": 3 a 5 parágrafos explicando os conceitos em linguagem simples, com analogias, SEM fórmulas. "caixas": 1 "definicao" e 1 "dica".`,
+  formulas: `"paragrafos": 1 a 2 parágrafos ligando a teoria às fórmulas. "formulas": cada fórmula com explicação de cada termo. "caixas": 1 "atencao" sobre um erro comum.`,
+  aplicacoes: `"paragrafos": 1 parágrafo de introdução. "exemplos": 2 a 3 exemplos resolvidos com passos curtos (um cálculo por passo). "caixas": 1 "dica".`,
+  pratica: `"paragrafos": 1 parágrafo curto. "exercicios": 3 a 4 exercícios com resposta e uma dica cada.`,
+};
+
+/** Texto de UMA parte da aula no formato de artigo-tutorial (como os de portais educacionais). */
+export function promptArtigo(entrada, plano, secaoId, material, slides) {
+  const secao = secaoPorId(secaoId);
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `${contexto(entrada)}
+
+Título da aula: ${plano?.titulo || entrada.assunto}
+Material desta parte [secao:${secao.id}]: ${JSON.stringify(material || {})}
+Slides desta parte (resumo do que foi apresentado): ${JSON.stringify((slides || []).map((s) => ({ titulo: s.titulo, topicos: s.topicos, destaque: s.destaque, formula: s.formula })))}
+
+Escreva a parte "${secao.titulo}" de uma AULA ONLINE em formato de artigo-tutorial, para o aluno ler sozinho.
+Use o material e os slides como base e aprofunde a explicação, sem inventar conteúdo fora do assunto.
+Linguagem clara, amigável e direta (fale com o aluno usando "você"), sem exageros nem personagens.
+Inclua: ${ARTIGO_POR_SECAO[secao.id]}
+Tipos de caixa: "dica", "atencao", "curiosidade", "definicao".
+
+Formato do JSON:
+{
+  "titulo": "título curto e chamativo desta parte",
+  "paragrafos": ["string"],
+  "caixas": [{ "tipo": "dica|atencao|curiosidade|definicao", "titulo": "string", "texto": "string" }],
+  "formulas": [{ "latex": "LaTeX sem $", "explicacao": "string" }],
+  "exemplos": [{ "enunciado": "string", "passos": ["string"], "resposta": "string" }],
+  "exercicios": [{ "enunciado": "string", "resposta": "string", "dica": "string" }]
+}
+(deixe vazias as listas que não se aplicam)`,
+  };
+}
+
+/** Escolhe visualizações interativas do catálogo (o código da página desenha). */
+export function promptVisualizacoes(entrada, plano, visao) {
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `${contexto(entrada)}
+
+Título da aula: ${plano?.titulo || entrada.assunto}
+Visão geral: ${JSON.stringify(visao || {})}
+
+Escolha de 1 a 2 visualizações interativas que ajudem o aluno a ENXERGAR este assunto.
+Use SOMENTE itens deste catálogo, com os parâmetros indicados:
+${CATALOGO_VISUALIZACOES}
+
+Se nenhum item fizer sentido para o assunto, devolva a lista vazia. Os valores devem ser coerentes com o assunto e a série.
+Cada item tem "secao": a parte da aula onde aparece ("teoria", "formulas" ou "aplicacoes").
+
+Formato do JSON:
+{ "visualizacoes": [{ "tipo": "funcao|barras|sequencia|triangulo|probabilidade|geometria", "titulo": "string", "explicacao": "o que o aluno deve observar ao mexer (1 ou 2 frases)", "secao": "teoria|formulas|aplicacoes", "params": {} }] }`,
+  };
+}
+
+/** Jogos de fixação bem simples (o código da página monta e corrige). */
+export function promptJogos(entrada, plano, visao) {
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `${contexto(entrada)}
+
+Título da aula: ${plano?.titulo || entrada.assunto}
+Objetivos: ${JSON.stringify(plano?.objetivos || [])}
+Visão geral: ${JSON.stringify(visao || {})}
+
+Crie atividades rápidas e simples para o aluno fixar o assunto [jogos].
+- "quiz": 5 perguntas de múltipla escolha (4 alternativas), "correta" é o índice da alternativa certa (0 a 3), com explicação curta.
+- "verdadeiro_falso": 4 afirmações (misture verdadeiras e falsas), com explicação curta.
+- "pares": 4 ou 5 pares para associar (termo ↔ significado ou fórmula ↔ nome).
+- "desafios": 2 ou 3 perguntas de conta com resposta NUMÉRICA (número puro, use ponto decimal) e uma dica.
+Confira cada resposta.
+
+Formato do JSON:
+{
+  "quiz": [{ "pergunta": "string", "alternativas": ["a","b","c","d"], "correta": 0, "explicacao": "string" }],
+  "verdadeiro_falso": [{ "afirmacao": "string", "verdadeiro": true, "explicacao": "string" }],
+  "pares": [{ "termo": "string", "significado": "string" }],
+  "desafios": [{ "pergunta": "string", "resposta": 12.5, "tolerancia": 0.01, "dica": "string" }]
+}`,
   };
 }

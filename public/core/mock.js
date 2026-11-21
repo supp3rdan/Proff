@@ -83,6 +83,91 @@ const MATERIAL = String.raw`{
   "ideias_chave": [], "formulas": [], "exemplos": [], "exercicios": []
 }`;
 
+const ARTIGOS = {
+  introducao: String.raw`{
+    "titulo": "Por que a corrida de táxi tem a ver com Matemática?",
+    "paragrafos": [
+      "Imagine que você pediu um carro por aplicativo. Antes mesmo de sair do lugar, já existe um valor a pagar: a bandeirada. Depois, cada quilômetro rodado acrescenta um valor fixo à conta.",
+      "Essa forma de calcular aparece em muitas situações do dia a dia: conta de luz, plano de celular, salário com comissão. Em todas elas, existe uma parte fixa e uma parte que cresce sempre do mesmo jeito.",
+      "Nesta aula, você vai descobrir que essas situações são descritas por um tipo de função muito importante: a função afim."
+    ],
+    "caixas": [{ "tipo": "curiosidade", "titulo": "Você sabia?", "texto": "O gráfico de toda função afim é uma reta. Por isso, com apenas dois pontos você já consegue desenhá-lo inteiro." }]
+  }`,
+  teoria: String.raw`{
+    "titulo": "Entendendo a ideia: uma parte fixa e uma parte que varia",
+    "paragrafos": [
+      "Quando uma grandeza depende de outra, dizemos que existe uma relação entre elas. No táxi, o preço depende da distância percorrida.",
+      "Repare que, a cada quilômetro a mais, o preço aumenta sempre a mesma quantia. Essa quantia é chamada de taxa de variação: ela diz o quanto a conta cresce para cada unidade a mais.",
+      "Já a bandeirada é o valor inicial: é quanto você paga mesmo sem andar nada. Toda função afim tem essas duas partes.",
+      "Pense em uma escada com degraus sempre do mesmo tamanho: a altura de onde você começa é o valor inicial, e o tamanho de cada degrau é a taxa de variação."
+    ],
+    "caixas": [
+      { "tipo": "definicao", "titulo": "Taxa de variação", "texto": "É o quanto a grandeza muda quando a outra aumenta uma unidade. Na função afim, ela é sempre a mesma." },
+      { "tipo": "dica", "titulo": "Monte uma tabela", "texto": "Antes de usar fórmulas, faça uma tabela com alguns valores. Fica fácil perceber o padrão de crescimento." }
+    ]
+  }`,
+  formulas: String.raw`{
+    "titulo": "Escrevendo a ideia em linguagem matemática",
+    "paragrafos": ["Agora que você entendeu a parte fixa e a parte que varia, podemos escrever tudo em uma única fórmula, chamada lei de formação."],
+    "formulas": [
+      { "latex": "f(x) = ax + b", "explicacao": "$a$ é a taxa de variação (quanto cresce por unidade), $b$ é o valor inicial e $x$ é a quantidade que varia." },
+      { "latex": "x = -\frac{b}{a}", "explicacao": "Raiz da função: o valor de $x$ em que $f(x) = 0$, ou seja, onde a reta corta o eixo $x$." }
+    ],
+    "caixas": [{ "tipo": "atencao", "titulo": "Cuidado com a ordem", "texto": "Em $f(x) = 3 - 2x$, a taxa de variação é $-2$, e não $3$. O coeficiente $a$ é sempre o número que multiplica $x$." }]
+  }`,
+  aplicacoes: String.raw`{
+    "titulo": "Colocando em prática",
+    "paragrafos": ["Veja como usar a lei de formação para resolver problemas. Clique para ver cada passo da resolução."],
+    "exemplos": [
+      { "enunciado": "Um táxi cobra R$ 5,00 de bandeirada e R$ 2,50 por km. Quanto custa uma corrida de 10 km?", "passos": ["Lei de formação: $f(x) = 2{,}5x + 5$", "Substitua $x$ por 10: $f(10) = 2{,}5 \cdot 10 + 5$", "Calcule: $f(10) = 25 + 5 = 30$"], "resposta": "R$ 30,00" },
+      { "enunciado": "Qual é a raiz de $f(x) = 3x - 6$?", "passos": ["Faça $f(x) = 0$: $3x - 6 = 0$", "Some 6 dos dois lados: $3x = 6$", "Divida por 3: $x = 2$"], "resposta": "$x = 2$" }
+    ],
+    "caixas": [{ "tipo": "dica", "titulo": "Confira a resposta", "texto": "Substitua o resultado na função. Se a conta fechar, a resposta está certa." }]
+  }`,
+  pratica: String.raw`{
+    "titulo": "Hora de praticar",
+    "paragrafos": ["Tente resolver no caderno antes de abrir a resposta."],
+    "exercicios": [
+      { "enunciado": "Para $f(x) = -2x + 8$, calcule $f(3)$.", "resposta": "$f(3) = 2$", "dica": "Troque o $x$ por 3." },
+      { "enunciado": "Qual é a raiz de $g(x) = 4x + 2$?", "resposta": "$x = -\frac{1}{2}$", "dica": "Iguale a função a zero." },
+      { "enunciado": "Um plano de celular custa R$ 20,00 fixos mais R$ 0,50 por minuto. Quanto custa falar 40 minutos?", "resposta": "R$ 40,00", "dica": "Monte $f(x) = 0{,}5x + 20$." }
+    ]
+  }`,
+};
+
+const VISUALIZACOES = `{ "visualizacoes": [
+  { "tipo": "funcao", "titulo": "Mexa nos coeficientes", "explicacao": "Arraste os controles e veja: a muda a inclinação da reta e b move a reta para cima ou para baixo.", "secao": "formulas",
+    "params": { "expressao": "a*x + b", "parametros": [ { "nome": "a", "rotulo": "a (taxa de variação)", "min": -5, "max": 5, "passo": 0.5, "valor": 2 }, { "nome": "b", "rotulo": "b (valor inicial)", "min": -10, "max": 10, "passo": 1, "valor": 1 } ], "x_min": -10, "x_max": 10 } },
+  { "tipo": "barras", "titulo": "Preço da corrida por distância", "explicacao": "Cada barra mostra o preço para uma distância. Repare que o aumento é sempre igual.", "secao": "teoria",
+    "params": { "rotulos": ["0 km", "2 km", "4 km", "6 km", "8 km"], "valores": [5, 10, 15, 20, 25], "unidade": "R$" } }
+] }`;
+
+const JOGOS = String.raw`{
+  "quiz": [
+    { "pergunta": "Em $f(x) = 3x + 2$, qual é a taxa de variação?", "alternativas": ["2", "3", "5", "x"], "correta": 1, "explicacao": "A taxa de variação é o número que multiplica $x$: 3." },
+    { "pergunta": "Qual é o valor inicial de $f(x) = -x + 7$?", "alternativas": ["-1", "1", "7", "-7"], "correta": 2, "explicacao": "O valor inicial é o termo independente, $b = 7$." },
+    { "pergunta": "Se $a > 0$, a função afim é:", "alternativas": ["crescente", "decrescente", "constante", "não existe"], "correta": 0, "explicacao": "Com taxa positiva, a função cresce." },
+    { "pergunta": "Qual é a raiz de $f(x) = 2x - 8$?", "alternativas": ["-4", "2", "4", "8"], "correta": 2, "explicacao": "$2x - 8 = 0 \Rightarrow x = 4$." },
+    { "pergunta": "O gráfico de uma função afim é:", "alternativas": ["uma parábola", "uma reta", "um círculo", "uma curva em S"], "correta": 1, "explicacao": "Toda função afim tem gráfico em forma de reta." }
+  ],
+  "verdadeiro_falso": [
+    { "afirmacao": "Em $f(x) = 5x$, o valor inicial é zero.", "verdadeiro": true, "explicacao": "Não há termo independente, então $b = 0$." },
+    { "afirmacao": "Se $a < 0$, a reta sobe da esquerda para a direita.", "verdadeiro": false, "explicacao": "Com $a < 0$ a função é decrescente: a reta desce." },
+    { "afirmacao": "A raiz é o ponto onde a reta corta o eixo $x$.", "verdadeiro": true, "explicacao": "Na raiz, $f(x) = 0$." },
+    { "afirmacao": "Em $f(x) = 4 - 3x$, a taxa de variação é 4.", "verdadeiro": false, "explicacao": "A taxa é o número que multiplica $x$: $-3$." }
+  ],
+  "pares": [
+    { "termo": "$a$", "significado": "taxa de variação" },
+    { "termo": "$b$", "significado": "valor inicial" },
+    { "termo": "$f(x) = 0$", "significado": "raiz da função" },
+    { "termo": "$a > 0$", "significado": "função crescente" }
+  ],
+  "desafios": [
+    { "pergunta": "Calcule $f(4)$ para $f(x) = 3x - 2$.", "resposta": 10, "tolerancia": 0, "dica": "Troque $x$ por 4." },
+    { "pergunta": "Um táxi cobra R$ 4,00 fixos e R$ 3,00 por km. Quanto custa uma corrida de 7 km?", "resposta": 25, "tolerancia": 0, "dica": "Monte $f(x) = 3x + 4$." }
+  ]
+}`;
+
 /** JSON de exemplo já interpretado (com o mesmo reparo de LaTeX do cliente real). */
 const ler = (texto) => JSON.parse(repararLatex(texto));
 
@@ -107,6 +192,14 @@ export function respostaSimulada(tarefa, usuario) {
     }
     case 'resolver':
       return RESOLVER;
+    case 'artigo': {
+      const secao = texto.match(/\[secao:(\w+)\]/)?.[1];
+      return ARTIGOS[secao] || '{"paragrafos": ["Texto de exemplo."]}';
+    }
+    case 'visualizacoes':
+      return VISUALIZACOES;
+    case 'jogos':
+      return JOGOS;
     case 'comparar': {
       const numeros = [...texto.matchAll(/"numero":(\d+)/g)].map((m) => Number(m[1]));
       return JSON.stringify({ comparacoes: numeros.map((numero) => ({ numero, equivalentes: true })) });

@@ -204,3 +204,43 @@ test('limite por minuto (429 "try again in") espera e repete o mesmo modelo', as
     globalThis.fetch = original;
   }
 });
+
+test('avaliador de expressões: contas, multiplicação implícita e segurança', async () => {
+  const { compilarExpressao: c } = await import('../public/core/expressao.js');
+  assert.equal(c('a*x^2 + b*x + c').avaliar({ x: 2, a: 1, b: -3, c: 2 }), 0);
+  assert.equal(c('2x + 1').avaliar({ x: 3 }), 7);
+  assert.equal(c('3(x+1)').avaliar({ x: 1 }), 6);
+  assert.equal(c('-x^2').avaliar({ x: 3 }), -9);
+  assert.equal(c('2,5x').avaliar({ x: 2 }), 5);
+  assert.ok(Math.abs(c('sin(pi/2)').avaliar() - 1) < 1e-12);
+  assert.ok(Number.isNaN(c('1/0').avaliar()));
+  assert.throws(() => c('x; alert(1)'));
+  assert.throws(() => c('(x+1'));
+  assert.deepEqual(c('alert(1)').variaveis.sort(), ['a', 'l', 'r', 't']); // vira letras soltas, nunca código
+});
+
+test('validação de visualizações e jogos descarta o que não serve', async () => {
+  const { validarVisualizacoes, validarJogos } = await import('../public/core/interativa.js');
+  const v = validarVisualizacoes([
+    { tipo: 'funcao', titulo: 'ok', params: { expressao: 'a*x+b', parametros: [{ nome: 'a', min: -2, max: 2, valor: 1 }, { nome: 'b', min: 0, max: 5, valor: 9 }] } },
+    { tipo: 'funcao', params: { expressao: 'alert(1)' } }, // letras que não são parâmetros
+    { tipo: 'funcao', params: { expressao: 'y+1' } }, // sem x
+    { tipo: 'inexistente', params: {} },
+    { tipo: 'barras', params: { rotulos: ['a'], valores: [1] } }, // poucas barras
+    { tipo: 'geometria', params: { figura: 'hexagono' } }, // figura desconhecida vira retângulo
+  ]);
+  assert.equal(v.length, 2);
+  assert.equal(v[0].params.parametros[1].valor, 5); // valor limitado ao máximo
+  assert.equal(v[1].params.figura, 'retangulo');
+
+  const j = validarJogos({
+    quiz: [{ pergunta: 'p', alternativas: ['a', 'b'], correta: 1 }, { pergunta: 'p', alternativas: ['a', 'b'], correta: 5 }],
+    verdadeiro_falso: [{ afirmacao: 'x', verdadeiro: 'sim' }, { afirmacao: 'y', verdadeiro: false }],
+    pares: [{ termo: 'a', significado: 'b' }],
+    desafios: [{ pergunta: 'q', resposta: '12.5' }, { pergunta: 'q', resposta: 'doze' }],
+  });
+  assert.equal(j.quiz.length, 1);
+  assert.equal(j.verdadeiro_falso.length, 1);
+  assert.equal(j.pares.length, 0); // menos de 3 pares não vira jogo
+  assert.deepEqual(j.desafios.map((d) => d.resposta), [12.5]);
+});

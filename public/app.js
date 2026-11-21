@@ -5,7 +5,10 @@ import { criarClienteLLM, PROVEDORES, corrigirChaves, provedorDaChave } from './
 import {
   gerarVisaoGeral, gerarPlano, gerarMaterial, formatarSlides, gerarQuestoes, conferirProva,
   montarProva, montarApresentacao, validarEntrada,
+  gerarArtigoSecao, gerarVisualizacoes, gerarJogos,
 } from './core/gerador.js?v=__VERSAO__';
+import { dadosDaPagina } from './core/interativa.js?v=__VERSAO__';
+import { montarPaginaInterativa } from './interativa/montar.js?v=__VERSAO__';
 import { SECOES } from './core/estrutura.js?v=__VERSAO__';
 
 const CHAVE_ULTIMA = 'proff:ultima';
@@ -16,8 +19,9 @@ const $ = (sel) => document.querySelector(sel);
 // visao/plano: plano de aula · secoes → slides: apresentação · questoes → prova: avaliação
 const estado = {
   entrada: null, visao: null, plano: null,
-  secoes: {}, slides: null,
+  secoes: {}, materiais: {}, slides: null,
   questoes: {}, prova: null, verificacao: null,
+  interativa: { secoes: {}, visualizacoes: null, jogos: null },
 };
 
 // ---------- armazenamento local (pode falhar em modo privado) ----------
@@ -197,6 +201,9 @@ async function gerarNoNavegador(tipo, extra) {
     case 'formatar': return formatarSlides(llm, e, extra.secao, extra.material);
     case 'questoes': return gerarQuestoes(llm, e, extra.plano, extra.visao, extra.tipoQuestao);
     case 'conferir': return conferirProva(llm, extra.questoes);
+    case 'artigo': return gerarArtigoSecao(llm, e, extra.plano, extra.secao, extra.material, extra.slides);
+    case 'visualizacoes': return gerarVisualizacoes(llm, e, extra.plano, extra.visao);
+    case 'jogos': return gerarJogos(llm, e, extra.plano, extra.visao);
     default: throw new Error(`Etapa desconhecida: ${tipo}`);
   }
 }
@@ -285,7 +292,8 @@ $('#form').addEventListener('submit', (evento) => {
         assunto: $('#assunto').value.trim(),
         observacoes: $('#observacoes').value.trim(),
       },
-      visao: null, plano: null, secoes: {}, slides: null, questoes: {}, prova: null, verificacao: null,
+      visao: null, plano: null, secoes: {}, materiais: {}, slides: null, questoes: {}, prova: null, verificacao: null,
+      interativa: { secoes: {}, visualizacoes: null, jogos: null },
     });
     $('#resultado').hidden = true;
     iniciarProgresso([['visao', 'Visão geral do tema'], ['plano', 'Plano de aula']]);
@@ -319,6 +327,7 @@ $('#botao-gerar-slides').addEventListener('click', () => {
       try {
         const extra = { plano: estado.plano, visao: estado.visao, secao: s.id };
         const { material } = await etapa(s.id, 'escrevendo o material', 'material', extra);
+        estado.materiais[s.id] = material; // reaproveitado na aula interativa
         const { slides, provedor } = await etapa(s.id, 'montando os slides', 'formatar', { secao: s.id, material });
         estado.secoes[s.id] = slides;
         armazenamento.gravar(CHAVE_ULTIMA, estado);
@@ -369,6 +378,135 @@ $('#botao-gerar-prova').addEventListener('click', () => {
   });
 });
 
+// ---------- 4. aula interativa: texto por parte → gráficos → jogos → página ----------
+const faltamTextos = () => SECOES.filter((s) => !estado.interativa?.secoes?.[s.id]);
+const interativaCompleta = () => faltamTextos().length === 0 && Boolean(estado.interativa?.jogos);
+let htmlInterativa = null; // página montada (em memória; é refeita a partir dos dados)
+
+$('#botao-gerar-interativa').addEventListener('click', () => {
+  comBloqueio($('#botao-gerar-interativa'), 'Gerando a aula interativa…', async () => {
+    if (interativaCompleta()) estado.interativa = { secoes: {}, visualizacoes: null, jogos: null };
+    htmlInterativa = null;
+    const it = estado.interativa;
+    iniciarProgresso([
+      ...SECOES.map((s) => [`texto-${s.id}`, `Texto da parte ${s.numero}: ${s.titulo}`]),
+      ['visualizacoes', 'Gráficos e visualizações'],
+      ['jogos', 'Jogos de fixação'],
+      ['pagina', 'Montando a página'],
+    ]);
+
+    const falhas = [];
+    for (const s of SECOES) {
+      const id = `texto-${s.id}`;
+      if (it.secoes[s.id]) { marcarEtapa(id, 'pronto', 'já gerado'); continue; }
+      try {
+        let material = estado.materiais?.[s.id];
+        if (!material) {
+          ({ material } = await etapa(id, 'recuperando o material', 'material', { plano: estado.plano, visao: estado.visao, secao: s.id }));
+          estado.materiais[s.id] = material;
+        }
+        const { artigo, provedor } = await etapa(id, 'escrevendo o texto', 'artigo', {
+          plano: estado.plano, secao: s.id, material, slides: estado.secoes?.[s.id] || [],
+        });
+        it.secoes[s.id] = artigo;
+        armazenamento.gravar(CHAVE_ULTIMA, estado);
+        marcarEtapa(id, 'pronto', provedor);
+      } catch {
+        falhas.push(`texto de ${s.titulo}`);
+      }
+    }
+
+    if (!it.visualizacoes) {
+      try {
+        const { visualizacoes, provedor } = await etapa('visualizacoes', 'escolhendo os gráficos', 'visualizacoes', { plano: estado.plano, visao: estado.visao });
+        it.visualizacoes = visualizacoes;
+        marcarEtapa('visualizacoes', 'pronto', visualizacoes.length ? `${visualizacoes.length} · ${provedor}` : 'nenhum gráfico combina com o assunto');
+      } catch {
+        it.visualizacoes = []; // opcional: a página sai sem gráficos
+      }
+    } else {
+      marcarEtapa('visualizacoes', 'pronto', 'já gerado');
+    }
+
+    if (!it.jogos) {
+      try {
+        const { jogos, provedor } = await etapa('jogos', 'criando os jogos', 'jogos', { plano: estado.plano, visao: estado.visao });
+        it.jogos = jogos;
+        marcarEtapa('jogos', 'pronto', provedor);
+      } catch {
+        falhas.push('jogos');
+      }
+    } else {
+      marcarEtapa('jogos', 'pronto', 'já gerado');
+    }
+    armazenamento.gravar(CHAVE_ULTIMA, estado);
+
+    if (falhas.length) {
+      throw new Error(`Não foi possível gerar: ${falhas.join(', ')}. Clique em "Gerar partes que faltam" para tentar de novo.`);
+    }
+    marcarEtapa('pagina', 'gerando', 'montando');
+    htmlInterativa = await obterHtmlInterativa();
+    marcarEtapa('pagina', 'pronto', 'pronta');
+    abrirAba('interativa');
+  });
+});
+
+async function obterHtmlInterativa() {
+  if (!htmlInterativa) {
+    const dados = dadosDaPagina({
+      entrada: estado.entrada, plano: estado.plano, visao: estado.visao, deck: estado.slides, interativa: estado.interativa,
+    });
+    htmlInterativa = await montarPaginaInterativa(dados);
+  }
+  return htmlInterativa;
+}
+
+const nomeArquivoInterativa = () =>
+  `Aula interativa - ${estado.entrada.assunto} - ${estado.entrada.serie}º ano.html`.replace(/[\\/:*?"<>|]/g, '');
+
+$('#botao-abrir-interativa').addEventListener('click', async () => {
+  // abre a página numa aba nova sem precisar baixar
+  const janela = window.open('', '_blank');
+  const url = URL.createObjectURL(new Blob([await obterHtmlInterativa()], { type: 'text/html' }));
+  if (janela) janela.location.href = url;
+  else window.location.href = url;
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+});
+
+$('#botao-baixar-interativa').addEventListener('click', async () => {
+  const url = URL.createObjectURL(new Blob([await obterHtmlInterativa()], { type: 'text/html' }));
+  const link = el('a', { href: url, download: nomeArquivoInterativa() });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
+
+async function renderizarInterativa() {
+  const prontos = Boolean(estado.slides?.slides?.length);
+  const completa = interativaCompleta();
+  const iniciada = Object.keys(estado.interativa?.secoes || {}).length > 0 || Boolean(estado.interativa?.jogos);
+  const botao = $('#botao-gerar-interativa');
+  botao.hidden = !prontos;
+  botao.textContent = completa ? 'Gerar aula interativa de novo' : iniciada ? 'Gerar partes que faltam' : 'Gerar aula interativa';
+  $('#botao-abrir-interativa').hidden = !completa;
+  $('#botao-baixar-interativa').hidden = !completa;
+  $('#dica-interativa').textContent = !prontos
+    ? 'Gere o plano de aula e os slides primeiro: a aula interativa é feita a partir deles.'
+    : completa
+      ? 'Página pronta para usar no lugar dos slides ou enviar aos alunos (funciona no celular). Abaixo, uma prévia.'
+      : 'Uma página com a aula em formato de artigo, gráficos que o aluno pode mexer e joguinhos para fixar o assunto.';
+
+  const previa = $('#previa-interativa');
+  previa.hidden = !completa;
+  if (completa) {
+    const html = await obterHtmlInterativa();
+    if (previa.srcdoc !== html) previa.srcdoc = html;
+  } else {
+    previa.removeAttribute('srcdoc');
+  }
+}
+
 // ---------- abas ----------
 function abrirAba(nome) {
   document.querySelectorAll('.aba').forEach((a) => a.classList.toggle('ativa', a.dataset.aba === nome));
@@ -396,6 +534,7 @@ function mostrarResultado() {
   renderizarSlides();
   renderizarProva();
   renderizarGabarito();
+  renderizarInterativa().catch((erro) => mostrarErro(`Não foi possível montar a aula interativa: ${erro.message}`));
   renderizarMatematica($('#resultado'));
 }
 
@@ -551,7 +690,7 @@ $('#botao-pptx').addEventListener('click', async () => {
 // ---------- restaura a última geração (fica no fim: usa funções e constantes acima) ----------
 const anterior = armazenamento.ler(CHAVE_ULTIMA);
 if (anterior?.plano) {
-  Object.assign(estado, { secoes: {}, questoes: {} }, anterior);
+  Object.assign(estado, { secoes: {}, materiais: {}, questoes: {}, interativa: { secoes: {}, visualizacoes: null, jogos: null } }, anterior);
   $('#serie').value = anterior.entrada.serie;
   preencherAssuntos();
   $('#assunto').value = anterior.entrada.assunto;

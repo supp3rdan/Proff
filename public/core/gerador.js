@@ -8,7 +8,11 @@ import {
   promptQuestoes,
   promptResolver,
   promptComparar,
+  promptArtigo,
+  promptVisualizacoes,
+  promptJogos,
 } from './prompts.js?v=__VERSAO__';
+import { validarArtigoSecao, validarVisualizacoes, validarJogos } from './interativa.js?v=__VERSAO__';
 import { SECOES, normalizarSlidesDaSecao } from './estrutura.js?v=__VERSAO__';
 
 export { montarApresentacao } from './estrutura.js?v=__VERSAO__';
@@ -179,4 +183,43 @@ function normalizar(texto) {
     .replace(/\s+/g, '')
     .replace(/,/g, '.')
     .replace(/^[a-z](\([a-z]\))?=/, '');
+}
+
+// ---------- aula interativa: texto por parte → visualizações → jogos ----------
+
+export async function gerarArtigoSecao(llm, entrada, plano, secao, material, slides) {
+  validarSecao(secao);
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptArtigo(entrada, plano, secao, material, slides),
+    tarefa: 'artigo',
+    temperatura: 0.5,
+    perfil: SECOES_COM_CONTAS.includes(secao) ? 'matematica' : 'texto',
+  });
+  const artigo = validarArtigoSecao(secao, dados);
+  if (!artigo.paragrafos.length && !artigo.exemplos.length && !artigo.exercicios.length) {
+    throw new Error('Texto vazio para esta parte.');
+  }
+  return { artigo, provedor };
+}
+
+export async function gerarVisualizacoes(llm, entrada, plano, visao) {
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptVisualizacoes(entrada, plano, visao),
+    tarefa: 'visualizacoes',
+    temperatura: 0.3,
+    perfil: 'matematica',
+  });
+  return { visualizacoes: validarVisualizacoes(dados.visualizacoes), provedor };
+}
+
+export async function gerarJogos(llm, entrada, plano, visao) {
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptJogos(entrada, plano, visao),
+    tarefa: 'jogos',
+    temperatura: 0.4,
+    perfil: 'matematica',
+  });
+  const jogos = validarJogos(dados);
+  if (!jogos.quiz.length && !jogos.verdadeiro_falso.length && !jogos.desafios.length) throw new Error('Nenhuma atividade gerada.');
+  return { jogos, provedor };
 }

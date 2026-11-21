@@ -33,12 +33,28 @@ O professor faz três ações separadas. Cada uma é dividida em **chamadas pequ
 | **Gerar plano de aula** | 1. visão geral do tema → 2. plano de aula baseado nela | — |
 | **Gerar slides** (aba Slides) | para cada uma das 5 partes: material didático → formatação em slides | capa, divisores, resumo, ordem e layout |
 | **Gerar avaliação** (aba Avaliação) | questões objetivas → questões discursivas → conferência do gabarito | numeração, junção e marcação do que revisar |
+| **Gerar aula interativa** (aba Aula interativa, depois dos slides) | texto de cada parte em formato de artigo → escolha de gráficos → jogos | página HTML completa: sumário, caixas, exemplos passo a passo, gráficos e jogos |
 
 Se uma parte falhar, o botão passa a mostrar **Gerar partes que faltam** e refaz só o que não deu certo.
 
 A lógica de geração (`public/core/`) é a mesma nos dois modos:
 - **com servidor** (`npm run dev` ou Vercel): as chaves ficam no servidor e cada etapa é uma requisição a `POST /api/gerar`;
 - **sem servidor** (GitHub Pages): o navegador chama a IA direto, com a chave do professor ou a chave padrão.
+
+## Aula interativa
+
+Depois do plano e dos slides, o Proff gera uma **página HTML** com a aula em formato de artigo-tutorial, para o professor usar no lugar dos slides ou enviar aos alunos:
+
+- capa, "nesta aula você vai aprender", sumário e barra de leitura;
+- as 5 partes da aula com caixas de **dica**, **atenção**, **curiosidade** e **definição**;
+- exemplos resolvidos que se revelam **passo a passo** e exercícios com dica e resposta;
+- **gráficos interativos** quando o assunto permite: função com controles deslizantes (com raízes e ponto no eixo y), barras, PA/PG, triângulo retângulo com seno/cosseno/tangente, simulador de moeda e dados, e figuras com área e perímetro;
+- **jogos de fixação**: quiz, verdadeiro ou falso, associação de pares e desafios de cálculo, com placar, estrelas e comemoração;
+- botão "Entendi" em cada parte, com o progresso salvo no navegador do aluno.
+
+A IA só escolhe o tipo de gráfico e os parâmetros a partir de um catálogo; o desenho é feito pelo código da página (`public/interativa/runtime.js`), com um avaliador de expressões que não usa `eval` (`public/core/expressao.js`). Os textos entram na página como texto, nunca como HTML.
+
+Dá para ver a prévia dentro do Proff, **abrir em nova aba** (sem baixar) ou **baixar o .html**, que funciona sozinho. As fórmulas usam o KaTeX pela internet; sem conexão, elas aparecem como texto.
 
 ## Usar pelo GitHub Pages (sem servidor)
 
@@ -128,6 +144,9 @@ public/core/estrutura.js roteiro padrão da aula e organização dos slides
 public/core/prompts.js prompts de plano, slides, prova e conferência
 public/core/gerador.js fluxo de geração e conferência do gabarito
 public/core/mock.js    respostas de exemplo do modo simulado/demonstração
+public/core/interativa.js catálogo e validação de gráficos e jogos; dados da aula interativa
+public/core/expressao.js avaliador seguro de expressões (gráficos)
+public/interativa/     página da aula interativa (CSS, runtime e montagem do arquivo)
 index.html             redireciona para public/ (GitHub Pages)
 server.js           servidor local de desenvolvimento
 test/               testes (npm test)

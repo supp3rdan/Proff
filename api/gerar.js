@@ -6,6 +6,9 @@
 //   formatar  → slides de uma parte      (secao, material)
 //   questoes  → questões da prova        (plano, visao, tipoQuestao: multipla|discursiva)
 //   conferir  → confere o gabarito       (questoes)
+//   artigo    → texto de uma parte da aula interativa (plano, secao, material, slides)
+//   visualizacoes → gráficos interativos (plano, visao)
+//   jogos     → atividades de fixação     (plano, visao)
 // Funciona como função serverless da Vercel e também pelo server.js local.
 
 import {
@@ -15,6 +18,9 @@ import {
   formatarSlides,
   gerarQuestoes,
   conferirProva,
+  gerarArtigoSecao,
+  gerarVisualizacoes,
+  gerarJogos,
   validarEntrada,
   ErroEntrada,
 } from '../public/core/gerador.js';
@@ -35,6 +41,9 @@ const ETAPAS = {
   material: (llm, e, c) => gerarMaterial(llm, e, objeto(c.plano, 'o plano de aula'), c.visao, c.secao),
   formatar: (llm, e, c) => formatarSlides(llm, e, c.secao, objeto(c.material, 'o material')),
   questoes: (llm, e, c) => gerarQuestoes(llm, e, objeto(c.plano, 'o plano de aula'), c.visao, c.tipoQuestao),
+  artigo: (llm, e, c) => gerarArtigoSecao(llm, e, objeto(c.plano, 'o plano de aula'), c.secao, c.material, c.slides),
+  visualizacoes: (llm, e, c) => gerarVisualizacoes(llm, e, objeto(c.plano, 'o plano de aula'), c.visao),
+  jogos: (llm, e, c) => gerarJogos(llm, e, objeto(c.plano, 'o plano de aula'), c.visao),
   conferir: (llm, e, c) => {
     if (!Array.isArray(c.questoes) || !c.questoes.length) throw new ErroEntrada('Faltaram as questões.');
     return conferirProva(llm, c.questoes);

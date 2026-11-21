@@ -1,0 +1,162 @@
+/* Aula interativa do Proff: visual de artigo-tutorial, colorido e amigável. */
+:root {
+  --azul: #1f4e79; --azul-medio: #2b6299; --azul-claro: #eef4fa; --amarelo: #ffd166; --amarelo-claro: #fff6dc;
+  --laranja: #e07a1f; --laranja-claro: #fdf1e6; --verde: #2e7d4f; --verde-claro: #e8f5ee; --roxo: #6c4ab6;
+  --roxo-claro: #f1ecfb; --vermelho: #b3261e; --vermelho-claro: #fdecea; --texto: #1d2733; --suave: #5b6876;
+  --borda: #dfe6ee; --fundo: #f7f9fc; --raio: 16px; --sombra: 0 6px 20px rgba(31, 78, 121, .08);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+body { margin: 0; font: 17px/1.7 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: var(--texto); background: var(--fundo); }
+button { font: inherit; }
+a { color: var(--azul-medio); }
+
+/* barra de leitura */
+.leitura { position: fixed; inset: 0 0 auto 0; height: 5px; background: transparent; z-index: 20; }
+.leitura span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--amarelo), var(--laranja)); transition: width .1s; }
+
+/* capa */
+.capa {
+  background: radial-gradient(circle at 85% 20%, rgba(255, 209, 102, .25), transparent 40%), linear-gradient(135deg, var(--azul), #163a5c);
+  color: #fff; padding: 56px 20px 64px; position: relative; overflow: hidden;
+}
+.capa::after { content: 'π'; position: absolute; right: 4%; bottom: -60px; font: 700 260px/1 Georgia, serif; color: var(--amarelo); opacity: .12; }
+.capa-conteudo { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+.selo { display: inline-block; background: var(--amarelo); color: #3b2a00; font-weight: 800; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; }
+.capa h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.15; margin: 14px 0 12px; max-width: 800px; }
+.capa .resumo { font-size: 1.15rem; color: #d6e4f0; max-width: 720px; margin: 0 0 20px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .25); padding: 4px 12px; border-radius: 999px; font-size: .88rem; }
+.medidor { margin-top: 22px; max-width: 420px; }
+.medidor-barra { height: 12px; background: rgba(255, 255, 255, .2); border-radius: 999px; overflow: hidden; }
+.medidor-barra span { display: block; height: 100%; width: 0; background: var(--amarelo); border-radius: 999px; transition: width .5s; }
+.medidor small { color: #d6e4f0; }
+
+/* layout */
+.pagina { max-width: 1100px; margin: -32px auto 0; padding: 0 16px 60px; display: grid; grid-template-columns: 250px 1fr; gap: 28px; position: relative; z-index: 2; }
+@media (max-width: 860px) { .pagina { grid-template-columns: 1fr; } }
+.sumario { position: sticky; top: 20px; align-self: start; background: #fff; border-radius: var(--raio); box-shadow: var(--sombra); padding: 18px; }
+.sumario h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; color: var(--suave); margin: 0 0 10px; }
+.sumario ol { list-style: none; margin: 0; padding: 0; }
+.sumario a { display: flex; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; text-decoration: none; color: var(--texto); font-size: .95rem; line-height: 1.3; }
+.sumario a:hover, .sumario a.ativo { background: var(--azul-claro); color: var(--azul); font-weight: 600; }
+.sumario a.feito::after { content: '✓'; margin-left: auto; color: var(--verde); font-weight: 800; }
+@media (max-width: 860px) { .sumario { position: static; } }
+
+.conteudo { min-width: 0; }
+.cartao { background: #fff; border-radius: var(--raio); box-shadow: var(--sombra); padding: 26px clamp(18px, 4vw, 36px); margin-bottom: 26px; }
+
+/* você vai aprender */
+.aprender h2 { margin: 0 0 10px; font-size: 1.25rem; }
+.aprender ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.aprender li { padding-left: 34px; position: relative; }
+.aprender li::before { content: '🎯'; position: absolute; left: 0; }
+.previos { margin-top: 14px; font-size: .92rem; color: var(--suave); }
+
+/* seções */
+.secao-cabecalho { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.secao-icone { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-size: 1.8rem; background: var(--amarelo-claro); flex: none; }
+.secao-cabecalho small { display: block; color: var(--laranja); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
+.secao-cabecalho h2 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.25; color: var(--azul); }
+.secao p { margin: 0 0 14px; }
+
+.caixa { border-radius: 14px; padding: 14px 18px 14px 56px; margin: 18px 0; position: relative; }
+.caixa::before { position: absolute; left: 16px; top: 13px; font-size: 1.4rem; }
+.caixa strong { display: block; margin-bottom: 2px; }
+.caixa-dica { background: var(--verde-claro); border-left: 6px solid var(--verde); }
+.caixa-dica::before { content: '💡'; }
+.caixa-atencao { background: var(--vermelho-claro); border-left: 6px solid var(--vermelho); }
+.caixa-atencao::before { content: '⚠️'; }
+.caixa-curiosidade { background: var(--roxo-claro); border-left: 6px solid var(--roxo); }
+.caixa-curiosidade::before { content: '🤔'; }
+.caixa-definicao { background: var(--azul-claro); border-left: 6px solid var(--azul); }
+.caixa-definicao::before { content: '📘'; }
+
+.formula { background: linear-gradient(135deg, var(--azul-claro), #fff); border: 2px dashed #b9cde2; border-radius: 16px; padding: 10px 18px; margin: 16px 0; }
+.formula .katex-display { margin: .4em 0; font-size: 1.25em; }
+.formula p { margin: 0 0 6px; color: var(--suave); font-size: .95rem; }
+
+.exemplo, .exercicio { border: 2px solid var(--borda); border-radius: 16px; padding: 16px 18px; margin: 16px 0; }
+.exemplo-rotulo { font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--laranja); }
+.exemplo .enunciado, .exercicio .enunciado { font-weight: 600; margin: 4px 0 10px; }
+.passos { list-style: none; padding: 0; margin: 0 0 10px; counter-reset: p; }
+.passos li { counter-increment: p; position: relative; padding: 6px 0 6px 40px; animation: surgir .35s ease; }
+.passos li::before { content: counter(p); position: absolute; left: 0; top: 6px; width: 28px; height: 28px; border-radius: 50%; background: var(--azul); color: #fff; font-weight: 800; font-size: .85rem; display: grid; place-items: center; }
+.resposta { display: inline-block; background: var(--verde-claro); color: var(--verde); font-weight: 800; padding: 6px 14px; border-radius: 12px; animation: surgir .35s ease; }
+@keyframes surgir { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.botao { cursor: pointer; border: 2px solid var(--azul); background: #fff; color: var(--azul); font-weight: 700; padding: 8px 16px; border-radius: 12px; transition: transform .1s, background .2s; }
+.botao:hover { background: var(--azul-claro); }
+.botao:active { transform: scale(.97); }
+.botao-cheio { background: var(--azul); color: #fff; }
+.botao-cheio:hover { background: #173c5e; }
+.botao-pequeno { padding: 5px 12px; font-size: .9rem; }
+.acoes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.revelar { background: var(--amarelo-claro); border-radius: 12px; padding: 10px 14px; margin-top: 10px; animation: surgir .3s ease; }
+
+.entendi { margin-top: 10px; text-align: right; }
+.entendi .botao.feito { background: var(--verde); border-color: var(--verde); color: #fff; }
+
+/* visualizações */
+.visual { background: linear-gradient(180deg, #fffdf6, #fff); border: 2px solid #f3e2b3; border-radius: 18px; padding: 18px; margin: 20px 0; }
+.visual h3 { margin: 0 0 4px; font-size: 1.1rem; }
+.visual h3::before { content: '🔎 '; }
+.visual > p { margin: 0 0 12px; color: var(--suave); font-size: .95rem; }
+.visual canvas, .visual svg { width: 100%; height: auto; display: block; background: #fff; border-radius: 12px; border: 1px solid var(--borda); touch-action: none; }
+.controles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 18px; margin-top: 12px; }
+.controle label { display: flex; justify-content: space-between; font-weight: 600; font-size: .92rem; }
+.controle output { font-variant-numeric: tabular-nums; color: var(--laranja); font-weight: 800; }
+.controle input[type=range] { width: 100%; accent-color: var(--laranja); }
+.leitura-valor { margin-top: 10px; font-size: .95rem; background: var(--azul-claro); border-radius: 10px; padding: 8px 12px; }
+.leitura-valor b { color: var(--azul); }
+
+/* jogos */
+.jogos-placar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--amarelo-claro); border-radius: 14px; padding: 12px 16px; margin-bottom: 18px; font-weight: 700; }
+.estrelas { font-size: 1.4rem; letter-spacing: 2px; }
+.jogo { border: 2px solid var(--borda); border-radius: 18px; padding: 18px; margin: 18px 0; }
+.jogo h3 { margin: 0 0 4px; }
+.jogo > p { margin: 0 0 12px; color: var(--suave); font-size: .95rem; }
+.alternativas { display: grid; gap: 8px; }
+.alternativa { text-align: left; cursor: pointer; border: 2px solid var(--borda); background: #fff; border-radius: 12px; padding: 10px 14px; transition: border-color .2s, background .2s; }
+.alternativa:hover:not(:disabled) { border-color: var(--azul-medio); }
+.alternativa.certa { background: var(--verde-claro); border-color: var(--verde); }
+.alternativa.errada { background: var(--vermelho-claro); border-color: var(--vermelho); }
+.feedback { margin-top: 10px; padding: 10px 14px; border-radius: 12px; animation: surgir .3s ease; }
+.feedback.ok { background: var(--verde-claro); }
+.feedback.nao { background: var(--vermelho-claro); }
+.contador { font-size: .85rem; color: var(--suave); font-weight: 700; }
+.vf { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; border-bottom: 1px dashed var(--borda); padding: 10px 0; }
+.vf:last-child { border-bottom: none; }
+.vf .afirmacao { flex: 1 1 260px; }
+.vf .feedback { flex-basis: 100%; margin-top: 4px; }
+.pares { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pares .coluna { display: grid; gap: 8px; align-content: start; }
+.par { cursor: pointer; border: 2px solid var(--borda); background: #fff; border-radius: 12px; padding: 10px 12px; text-align: center; transition: all .2s; }
+.par.selecionado { border-color: var(--laranja); background: var(--laranja-claro); transform: scale(1.02); }
+.par.feito { border-color: var(--verde); background: var(--verde-claro); cursor: default; }
+.par.tremer { animation: tremer .35s; border-color: var(--vermelho); }
+@keyframes tremer { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.desafio { border-bottom: 1px dashed var(--borda); padding: 12px 0; }
+.desafio:last-child { border-bottom: none; }
+.desafio form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.desafio input { font: inherit; padding: 8px 12px; border: 2px solid var(--borda); border-radius: 10px; width: 140px; }
+.festa { position: fixed; inset: 0; pointer-events: none; z-index: 30; overflow: hidden; }
+.festa span { position: absolute; top: -40px; font-size: 1.8rem; animation: cair 2.4s linear forwards; }
+@keyframes cair { to { transform: translateY(110vh) rotate(360deg); } }
+
+/* conclusão */
+.conclusao ul { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.conclusao li { background: var(--verde-claro); border-radius: 12px; padding: 10px 14px 10px 44px; position: relative; }
+.conclusao li::before { content: '✓'; position: absolute; left: 14px; top: 9px; color: var(--verde); font-weight: 900; }
+.rodape { text-align: center; color: var(--suave); font-size: .85rem; padding: 10px 16px 40px; }
+
+/* impressão: conteúdo sem botões e sem respostas */
+@media print {
+  body { background: #fff; font-size: 12pt; }
+  .leitura, .sumario, .medidor, .acoes, .entendi, .controles, .jogos-placar, .festa, .botao { display: none !important; }
+  .pagina { display: block; margin: 0; }
+  .cartao { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+  .capa { background: #fff; color: #000; padding: 10px 0; }
+  .capa .resumo, .chip { color: #333; }
+  .capa::after { display: none; }
+}
