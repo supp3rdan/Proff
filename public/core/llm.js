@@ -1,6 +1,10 @@
-// Cliente único para APIs compatíveis com a OpenAI (Gemini, Groq, OpenRouter).
+// Cliente único para APIs compatíveis com a OpenAI (Groq, Gemini, OpenRouter).
 // Tenta os provedores em ordem e passa para o próximo quando um falha
 // (limite de uso, erro do servidor, tempo esgotado ou JSON inválido).
+//
+// Cada pedido tem um PERFIL, que escolhe o modelo mais adequado:
+//   "texto"      → redação da aula e dos slides (Llama 3.3 70B no Groq: muito rápido)
+//   "matematica" → contas, questões e gabarito (gpt-oss-120b no Groq: raciocina antes de responder)
 //
 // Este arquivo não usa nada específico do Node: roda no servidor (Vercel /
 // server.js) e também direto no navegador (GitHub Pages).
@@ -14,9 +18,12 @@ export const PROVEDORES = [
     url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
     // Em ordem de preferência. Se um modelo for desativado ou não tiver cota
     // grátis, o Proff tenta o próximo (e também o modelo que o erro sugerir).
-    modelos: ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'],
+    modelos: {
+      texto: ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'],
+      matematica: ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'],
+    },
     // Raciocínio curto: os modelos novos "pensam" bastante por padrão e demoram.
-    extras: { reasoning_effort: 'low' },
+    extras: () => ({ reasoning_effort: 'low' }),
     ondeCriarChave: 'https://aistudio.google.com/app/apikey',
     prefixos: ['AIza', 'AQ.'],
   },
@@ -24,8 +31,13 @@ export const PROVEDORES = [
     nome: 'groq',
     rotulo: 'Groq',
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    modelos: ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'],
-    extras: { reasoning_effort: 'low' },
+    modelos: {
+      texto: ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b'],
+      matematica: ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'],
+    },
+    // Só o gpt-oss aceita reasoning_effort; nas contas ele raciocina um pouco mais.
+    extras: (modelo, perfil) =>
+      modelo.includes('gpt-oss') ? { reasoning_effort: perfil === 'matematica' ? 'medium' : 'low' } : {},
     ondeCriarChave: 'https://console.groq.com/keys',
     prefixos: ['gsk_'],
   },
@@ -33,11 +45,14 @@ export const PROVEDORES = [
     nome: 'openrouter',
     rotulo: 'OpenRouter',
     url: 'https://openrouter.ai/api/v1/chat/completions',
-    modelos: ['openrouter/free'],
+    modelos: { texto: ['openrouter/free'], matematica: ['openrouter/free'] },
     ondeCriarChave: 'https://openrouter.ai/keys',
     prefixos: ['sk-or-'],
   },
 ];
+
+// Ordem de uso: Groq primeiro (mais rápido), depois Gemini e OpenRouter como reserva.
+const ORDEM_DE_USO = ['groq', 'gemini', 'openrouter'];
 
 export class ErroLLM extends Error {}
 
@@ -67,10 +82,11 @@ export function corrigirChaves(chaves = {}) {
   return { chaves: certas, avisos };
 }
 
-// Modelo que funcionou por provedor (evita repetir tentativas na mesma sessão).
+// Modelo que funcionou por provedor e perfil (evita repetir tentativas na mesma sessão).
 const MODELO_QUE_FUNCIONOU = new Map();
-// Provedores que recusaram os parâmetros extras (ex.: reasoning_effort).
+// Modelos que recusaram os parâmetros extras (ex.: reasoning_effort).
 const SEM_EXTRAS = new Set();
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Esquece o que foi aprendido na sessão (usado nos testes). */
 export function limparCacheDeModelos() {
@@ -113,7 +129,14 @@ export function erroHTTP(status, corpo, modelo) {
     sobrecarga ||
     status === 404 ||
     /no longer available|not found|does not exist|decommissioned|deprecated|not supported/i.test(texto) ||
-    (status === 429 && /limit:\s*0\b/.test(texto));
+    (status === 429 && /limit:\s*0\b|per day|\bTPD\b|\bRPD\b|daily/i.test(texto));
+  // limite por minuto ("try again in 7.5s"): vale esperar um pouco e repetir
+  const aguardar = texto.match(/try again in ([\d.]+)\s*(ms|s)\b/i);
+  if (status === 429 && aguardar && !erro.trocarModelo) {
+    const ms = Number(aguardar[1]) * (aguardar[2].toLowerCase() === 'ms' ? 1 : 1000);
+    if (ms <= 20000) erro.esperarMs = Math.ceil(ms) + 500;
+  }
+  if (status === 429 && !erro.esperarMs) erro.trocarModelo = true;
   const sugerido = texto.match(/use (?:models\/)?([a-z0-9][\w.-]*\w)/i);
   if (sugerido && /gemini|llama|gpt|gemma|qwen|mistral/i.test(sugerido[1])) erro.modeloSugerido = sugerido[1];
   return erro;
@@ -127,7 +150,7 @@ export function erroHTTP(status, corpo, modelo) {
  * @param {number}  [config.timeoutMs]
  */
 export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, timeoutMs = 120000 } = {}) {
-  const ativos = PROVEDORES.filter((p) => chaves[p.nome]);
+  const ativos = ORDEM_DE_USO.map((n) => PROVEDORES.find((p) => p.nome === n)).filter((p) => chaves[p.nome]);
 
   /**
    * Envia um pedido e devolve o JSON já interpretado.
@@ -137,8 +160,9 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
    * @param {string} o.tarefa     nome da tarefa (usado no modo simulado e nos logs)
    * @param {number} [o.comecarPor] índice do provedor inicial (para variar o modelo na verificação)
    * @param {number} [o.temperatura]
+   * @param {'texto'|'matematica'} [o.perfil] escolhe o modelo (ver topo do arquivo)
    */
-  async function gerarJSON({ sistema, usuario, tarefa, comecarPor = 0, temperatura = 0.6 }) {
+  async function gerarJSON({ sistema, usuario, tarefa, comecarPor = 0, temperatura = 0.6, perfil = 'texto' }) {
     if (simulado) {
       await new Promise((r) => setTimeout(r, 400));
       return { dados: extrairJSON(respostaSimulada(tarefa, usuario)), provedor: 'simulado' };
@@ -153,8 +177,8 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
 
     for (const provedor of ordem) {
       try {
-        const texto = await chamar(provedor, sistema, usuario, temperatura);
-        return { dados: extrairJSON(texto), provedor: provedor.nome };
+        const { texto, modelo } = await chamar(provedor, sistema, usuario, temperatura, perfil);
+        return { dados: extrairJSON(texto), provedor: `${provedor.nome} · ${nomeCurto(modelo)}` };
       } catch (erro) {
         const motivo = erro.name === 'TypeError' ? 'falha de rede (internet ou bloqueio do navegador)' : erro.message;
         falhas.push(`${provedor.nome}: ${motivo}`);
@@ -165,20 +189,28 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
   }
 
   /** Tenta os modelos do provedor em ordem; lembra qual funcionou. */
-  async function chamar(provedor, sistema, usuario, temperatura) {
-    const candidatos = listaDeModelos(provedor);
+  async function chamar(provedor, sistema, usuario, temperatura, perfil) {
+    const candidatos = listaDeModelos(provedor, perfil);
+    const esperou = new Set();
     let ultimoErro;
     for (let i = 0; i < candidatos.length; i++) {
       const modelo = candidatos[i];
       try {
-        const texto = await chamarModelo(provedor, modelo, sistema, usuario, temperatura);
-        MODELO_QUE_FUNCIONOU.set(provedor.nome, modelo);
-        return texto;
+        const texto = await chamarModelo(provedor, modelo, sistema, usuario, temperatura, perfil);
+        MODELO_QUE_FUNCIONOU.set(`${provedor.nome}:${perfil}`, modelo);
+        return { texto, modelo };
       } catch (erro) {
         ultimoErro = erro;
-        if (erro.semExtras && !SEM_EXTRAS.has(provedor.nome)) {
+        if (erro.semExtras && !SEM_EXTRAS.has(modelo)) {
           // o modelo não aceitou reasoning_effort: repete o mesmo modelo sem ele
-          SEM_EXTRAS.add(provedor.nome);
+          SEM_EXTRAS.add(modelo);
+          i--;
+          continue;
+        }
+        if (erro.esperarMs && !esperou.has(modelo)) {
+          // limite por minuto: espera o tempo pedido e repete uma vez
+          esperou.add(modelo);
+          await espera(erro.esperarMs);
           i--;
           continue;
         }
@@ -193,13 +225,17 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
     throw ultimoErro;
   }
 
-  function listaDeModelos(provedor) {
-    const lista = [MODELO_QUE_FUNCIONOU.get(provedor.nome), modelos[provedor.nome], ...provedor.modelos];
+  function listaDeModelos(provedor, perfil) {
+    const lista = [
+      modelos[provedor.nome], // escolhido pelo usuário (ex.: GROQ_MODEL), vale para os dois perfis
+      MODELO_QUE_FUNCIONOU.get(`${provedor.nome}:${perfil}`),
+      ...(provedor.modelos[perfil] || provedor.modelos.texto),
+    ];
     return [...new Set(lista.filter(Boolean))];
   }
 
-  async function chamarModelo(provedor, modelo, sistema, usuario, temperatura) {
-    const extras = SEM_EXTRAS.has(provedor.nome) ? {} : provedor.extras || {};
+  async function chamarModelo(provedor, modelo, sistema, usuario, temperatura, perfil) {
+    const extras = SEM_EXTRAS.has(modelo) || !provedor.extras ? {} : provedor.extras(modelo, perfil);
     const corpo = {
       model: modelo,
       temperature: temperatura,
@@ -237,6 +273,11 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
     gerarJSON,
     provedores: simulado ? ['simulado'] : ativos.map((p) => p.nome),
   };
+}
+
+/** "openai/gpt-oss-120b" → "gpt-oss-120b"; "llama-3.3-70b-versatile" → "llama-3.3-70b". */
+function nomeCurto(modelo) {
+  return String(modelo).split('/').pop().replace(/-versatile$|-instruct$/, '');
 }
 
 /** Aceita JSON puro ou JSON dentro de bloco ```json ... ```. */

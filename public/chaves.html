@@ -27,7 +27,8 @@
         Google Gemini, Groq e OpenRouter. A chave de API é como uma senha que libera esse uso para você.
       </p>
       <ul>
-        <li><strong>Basta uma chave</strong> para o Proff funcionar. Recomendamos começar pelo <a href="#gemini">Google Gemini</a>.</li>
+        <li><strong>Basta uma chave</strong> para o Proff funcionar. Recomendamos o <a href="#groq">Groq</a> (o mais rápido) e, como reserva, o <a href="#gemini">Google Gemini</a>.</li>
+        <li>Com a chave do Groq, o Proff usa o <strong>Llama 3.3</strong> para escrever a aula e os slides e o <strong>gpt-oss</strong> para as contas, as questões e o gabarito.</li>
         <li>Com duas ou mais, o Proff troca de provedor sozinho quando um atinge o limite, e confere o gabarito com um modelo diferente.</li>
         <li>Nenhuma delas pede cartão de crédito.</li>
         <li>Se você não colar nenhuma chave, o Proff usa as <strong>chaves padrão</strong> do projeto (quando houver). Elas são compartilhadas por todos os professores, então podem atingir o limite do dia.</li>
@@ -41,7 +42,7 @@
     </section>
 
     <section class="cartao" id="gemini">
-      <span class="etiqueta">Recomendado</span>
+      <span class="etiqueta">Reserva recomendada</span>
       <h2>1. Google Gemini</h2>
       <p class="meta">Precisa de uma conta Google (Gmail). Cota diária generosa.</p>
       <ol class="passos">
@@ -56,8 +57,9 @@
     </section>
 
     <section class="cartao" id="groq">
+      <span class="etiqueta">Recomendado</span>
       <h2>2. Groq</h2>
-      <p class="meta">Pode entrar com Google, GitHub ou e-mail. Muito rápido.</p>
+      <p class="meta">Pode entrar com Google, GitHub ou e-mail. O mais rápido: usa Llama 3.3 (texto) e gpt-oss (matemática).</p>
       <ol class="passos">
         <li>Acesse o <a href="https://console.groq.com/keys" target="_blank" rel="noopener">GroqCloud → API Keys</a> e crie sua conta ou entre.</li>
         <li>Clique em <strong>Create API Key</strong>.</li>

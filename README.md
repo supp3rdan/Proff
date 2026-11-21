@@ -21,7 +21,8 @@ A IA escreve o conteúdo de cada parte; o código garante a ordem, corrige slide
 - **A IA só escreve o conteúdo.** O visual dos slides é código do projeto: tema fixo (cores, fontes, barra lateral, etiquetas, passos numerados, cartões de resumo) e um layout para cada tipo de slide. No `.pptx`, as fórmulas em destaque são desenhadas pelo MathJax como imagem nítida, e as fórmulas no meio do texto usam a fonte Cambria Math (continuam editáveis). Cada exercício vira dois slides: o enunciado e, em seguida, a resposta.
 - **Prova** pronta para imprimir e **gabarito** com resolução.
 - **Conferência do gabarito**: uma segunda chamada de IA (de preferência em outro provedor) resolve a prova sem ver as respostas. Se o resultado não bater, a questão aparece marcada para revisão.
-- **Troca automática de provedor**: tenta o Gemini; se der limite ou erro, passa para o Groq e depois para o OpenRouter.
+- **Modelo certo para cada tarefa**: com a chave do Groq, o **Llama 3.3 70B** escreve a aula e os slides (muito rápido) e o **gpt-oss-120b** cuida das contas, das questões e do gabarito (raciocina antes de responder).
+- **Troca automática**: tenta o Groq; se der limite ou erro, passa para o Gemini e depois para o OpenRouter. Limite por minuto espera alguns segundos e repete.
 
 ## Como funciona
 
@@ -82,8 +83,8 @@ npm run demo
 
 | Provedor | Onde criar a chave | Observação |
 | --- | --- | --- |
-| Google Gemini | https://aistudio.google.com/app/apikey | Principal (modelo gemini-3.8-flash; se um modelo for desativado, o Proff tenta outro sozinho). No plano grátis, o Google pode usar os pedidos para melhorar os produtos. |
-| Groq | https://console.groq.com/keys | Muito rápido; limite de 8 mil tokens por minuto. |
+| Google Gemini | https://aistudio.google.com/app/apikey | Reserva (gemini-3.8-flash; se um modelo for desativado, o Proff tenta outro sozinho). No plano grátis, o Google pode usar os pedidos para melhorar os produtos. |
+| Groq | https://console.groq.com/keys | **Principal.** Muito rápido; Llama 3.3 para texto e gpt-oss para matemática. |
 | OpenRouter | https://openrouter.ai/keys | Modelos `:free`, até 50 pedidos por dia. |
 
 Basta uma chave para funcionar. Com duas ou mais, a conferência do gabarito usa um modelo diferente do que criou a prova.

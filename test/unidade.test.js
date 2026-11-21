@@ -59,7 +59,8 @@ test('troca de modelo quando o modelo foi desativado', async () => {
 });
 
 test('envia reasoning_effort e repete sem ele se o modelo recusar', async () => {
-  const { criarClienteLLM } = await import('../public/core/llm.js');
+  const { criarClienteLLM, limparCacheDeModelos } = await import('../public/core/llm.js');
+  limparCacheDeModelos();
   const corpos = [];
   const original = globalThis.fetch;
   globalThis.fetch = async (_url, opcoes) => {
@@ -71,7 +72,7 @@ test('envia reasoning_effort e repete sem ele se o modelo recusar', async () => 
     return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": 1}' } }] }), { status: 200 });
   };
   try {
-    const llm = criarClienteLLM({ chaves: { groq: 'x' } });
+    const llm = criarClienteLLM({ chaves: { gemini: 'x' } });
     const r = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't' });
     assert.deepEqual(r.dados, { ok: 1 });
     assert.equal(corpos[0].reasoning_effort, 'low');
@@ -152,6 +153,53 @@ test('modelo sobrecarregado (503) tenta o próximo modelo', async () => {
     assert.deepEqual(r.dados, { ok: 3 });
     assert.equal(usados[0], 'cheio');
     assert.equal(usados.length, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('Groq: Llama para texto e gpt-oss (raciocínio médio) para matemática', async () => {
+  const { criarClienteLLM, limparCacheDeModelos } = await import('../public/core/llm.js');
+  limparCacheDeModelos();
+  const corpos = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, opcoes) => {
+    corpos.push(JSON.parse(opcoes.body));
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": 4}' } }] }), { status: 200 });
+  };
+  try {
+    const llm = criarClienteLLM({ chaves: { gemini: 'g', groq: 'x' } });
+    const r1 = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't', perfil: 'texto' });
+    const r2 = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't', perfil: 'matematica' });
+    assert.equal(corpos[0].model, 'llama-3.3-70b-versatile');
+    assert.equal('reasoning_effort' in corpos[0], false);
+    assert.equal(corpos[1].model, 'openai/gpt-oss-120b');
+    assert.equal(corpos[1].reasoning_effort, 'medium');
+    assert.equal(r1.provedor, 'groq · llama-3.3-70b');
+    assert.equal(r2.provedor, 'groq · gpt-oss-120b');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('limite por minuto (429 "try again in") espera e repete o mesmo modelo', async () => {
+  const { criarClienteLLM, limparCacheDeModelos } = await import('../public/core/llm.js');
+  limparCacheDeModelos();
+  const usados = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, opcoes) => {
+    const { model } = JSON.parse(opcoes.body);
+    usados.push(model);
+    if (usados.length === 1) {
+      return new Response(JSON.stringify({ error: { message: 'Rate limit reached for tokens per minute (TPM). Please try again in 20ms.' } }), { status: 429 });
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": 5}' } }] }), { status: 200 });
+  };
+  try {
+    const llm = criarClienteLLM({ chaves: { groq: 'x' } });
+    const r = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't' });
+    assert.deepEqual(r.dados, { ok: 5 });
+    assert.deepEqual(usados, ['llama-3.3-70b-versatile', 'llama-3.3-70b-versatile']);
   } finally {
     globalThis.fetch = original;
   }

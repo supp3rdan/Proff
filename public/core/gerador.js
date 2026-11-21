@@ -15,6 +15,9 @@ export { montarApresentacao } from './estrutura.js?v=__VERSAO__';
 
 const IDS_SECOES = SECOES.map((s) => s.id);
 
+// Partes da aula com contas (exemplos resolvidos e exercícios) usam o modelo de matemática.
+const SECOES_COM_CONTAS = ['aplicacoes', 'pratica'];
+
 export class ErroEntrada extends Error {}
 
 export function validarEntrada(corpo) {
@@ -33,12 +36,12 @@ export function validarEntrada(corpo) {
 // ---------- plano: visão geral → plano ----------
 
 export async function gerarVisaoGeral(llm, entrada) {
-  const { dados, provedor } = await llm.gerarJSON({ ...promptVisaoGeral(entrada), tarefa: 'visao', temperatura: 0.4 });
+  const { dados, provedor } = await llm.gerarJSON({ ...promptVisaoGeral(entrada), tarefa: 'visao', temperatura: 0.4, perfil: 'texto' });
   return { visao: dados, provedor };
 }
 
 export async function gerarPlano(llm, entrada, visao) {
-  const { dados, provedor } = await llm.gerarJSON({ ...promptPlano(entrada, visao), tarefa: 'plano' });
+  const { dados, provedor } = await llm.gerarJSON({ ...promptPlano(entrada, visao), tarefa: 'plano', perfil: 'texto' });
   if (!Array.isArray(dados.etapas)) throw new Error('Plano gerado sem etapas.');
   return { plano: dados, provedor };
 }
@@ -56,6 +59,7 @@ export async function gerarMaterial(llm, entrada, plano, visao, secao) {
     ...promptMaterial(entrada, plano, visao, secao),
     tarefa: 'material',
     temperatura: 0.5,
+    perfil: SECOES_COM_CONTAS.includes(secao) ? 'matematica' : 'texto',
   });
   return { material: dados, provedor };
 }
@@ -66,6 +70,7 @@ export async function formatarSlides(llm, entrada, secao, material) {
     ...promptFormatar(entrada, secao, material),
     tarefa: 'formatar',
     temperatura: 0.3,
+    perfil: 'texto',
   });
   const slides = normalizarSlidesDaSecao(secao, dados.slides);
   if (slides.length === 0) throw new Error('Nenhum slide gerado para esta parte.');
@@ -77,7 +82,7 @@ export async function formatarSlides(llm, entrada, secao, material) {
 
 export async function gerarQuestoes(llm, entrada, plano, visao, tipo) {
   if (!['multipla', 'discursiva'].includes(tipo)) throw new ErroEntrada('Tipo de questão inválido.');
-  const { dados, provedor } = await llm.gerarJSON({ ...promptQuestoes(entrada, plano, visao, tipo), tarefa: `prova-${tipo}` });
+  const { dados, provedor } = await llm.gerarJSON({ ...promptQuestoes(entrada, plano, visao, tipo), tarefa: `prova-${tipo}`, perfil: 'matematica' });
   const questoes = (Array.isArray(dados.questoes) ? dados.questoes : []).filter((q) => q && q.enunciado);
   return { questoes, provedor };
 }
@@ -124,6 +129,7 @@ async function verificarGabarito(llm, questoes) {
   const { dados, provedor } = await llm.gerarJSON({
     ...promptResolver(questoes),
     tarefa: 'resolver',
+    perfil: 'matematica',
     comecarPor: 1,
     temperatura: 0.1,
   });
@@ -148,6 +154,7 @@ async function verificarGabarito(llm, questoes) {
     const { dados: comp } = await llm.gerarJSON({
       ...promptComparar(discursivas),
       tarefa: 'comparar',
+      perfil: 'matematica',
       temperatura: 0,
     });
     for (const c of comp.comparacoes || []) {
