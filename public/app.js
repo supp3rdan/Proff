@@ -56,8 +56,21 @@ function atualizarStatus(provedores) {
   alvo.classList.toggle('status-alerta', provedores.length === 0);
 }
 
+// Chaves padrão do projeto: vêm de config.js (gerado na publicação a partir dos
+// segredos do repositório). As chaves que o professor colar têm prioridade.
+function chavesPadrao() {
+  const chaves = window.PROFF_CONFIG?.chaves || {};
+  return Object.fromEntries(PROVEDORES.filter((p) => chaves[p.nome]).map((p) => [p.nome, chaves[p.nome]]));
+}
+
 function lerConfigNavegador() {
   return { chaves: {}, demo: false, ...(armazenamento.ler(CHAVE_CONFIG) || {}) };
+}
+
+/** Chaves do professor, se ele colou alguma; senão, as chaves padrão do projeto. */
+function chavesEfetivas(config) {
+  const proprias = Object.keys(config.chaves).length > 0;
+  return { chaves: proprias ? config.chaves : chavesPadrao(), proprias };
 }
 
 function montarConfigChaves() {
@@ -68,13 +81,10 @@ function montarConfigChaves() {
   $('#campos-chaves').replaceChildren(
     ...PROVEDORES.map((p) =>
       el('div', { classe: 'campo' }, [
-        el('label', { for: `chave-${p.nome}` }, [
-          document.createTextNode(`${p.rotulo} `),
-          el('a', { href: p.ondeCriarChave, target: '_blank', rel: 'noopener', texto: 'criar chave' }),
-        ]),
+        el('label', { for: `chave-${p.nome}`, texto: p.rotulo }),
         el('input', {
           id: `chave-${p.nome}`, type: 'password', autocomplete: 'off', spellcheck: 'false',
-          placeholder: 'cole a chave aqui', value: config.chaves[p.nome] || '',
+          placeholder: 'cole a sua chave aqui', value: config.chaves[p.nome] || '',
         }),
       ])
     )
@@ -93,15 +103,34 @@ function montarConfigChaves() {
   painel.addEventListener('input', salvar);
   painel.addEventListener('change', salvar);
 
+  $('#botao-limpar-chaves').addEventListener('click', () => {
+    PROVEDORES.forEach((p) => ($(`#chave-${p.nome}`).value = ''));
+    salvar();
+  });
+
   resumirConfig(config);
-  if (!config.demo && Object.keys(config.chaves).length === 0) painel.open = true;
+  const { chaves } = chavesEfetivas(config);
+  if (!config.demo && Object.keys(chaves).length === 0) painel.open = true;
 }
 
 function resumirConfig(config) {
-  const nomes = PROVEDORES.filter((p) => config.chaves[p.nome]).map((p) => p.nome);
-  const provedores = config.demo ? ['demonstração'] : nomes;
-  $('#resumo-chaves').textContent = provedores.length ? `(${provedores.join(', ')})` : '(nenhuma configurada)';
-  atualizarStatus(provedores);
+  const { chaves, proprias } = chavesEfetivas(config);
+  const nomes = Object.keys(chaves);
+  const temPadrao = Object.keys(chavesPadrao()).length > 0;
+
+  let resumo;
+  if (config.demo) resumo = '(modo demonstração)';
+  else if (proprias) resumo = `(usando as suas: ${nomes.join(', ')})`;
+  else if (nomes.length) resumo = `(usando as chaves padrão do Proff: ${nomes.join(', ')})`;
+  else resumo = '(nenhuma configurada)';
+  $('#resumo-chaves').textContent = resumo;
+
+  $('#aviso-padrao').textContent = temPadrao
+    ? 'Este Proff já vem com chaves padrão. Deixe os campos vazios para usá-las, ou cole as suas para usar a sua própria cota.'
+    : 'Cole pelo menos uma chave para gerar aulas.';
+  $('#botao-limpar-chaves').hidden = !proprias;
+
+  atualizarStatus(config.demo ? ['demonstração'] : nomes.map((n) => (proprias ? n : `${n} (padrão)`)));
 }
 
 $('#serie').addEventListener('change', preencherAssuntos);
@@ -127,11 +156,12 @@ async function chamarAPI(tipo, extra) {
 
 async function gerarNoNavegador(tipo, extra) {
   const config = lerConfigNavegador();
-  if (!config.demo && Object.keys(config.chaves).length === 0) {
+  const { chaves } = chavesEfetivas(config);
+  if (!config.demo && Object.keys(chaves).length === 0) {
     $('#config-chaves').open = true;
     throw new Error('Cole pelo menos uma chave de API em "Chaves de API" ou marque o modo demonstração.');
   }
-  const llm = criarClienteLLM({ chaves: config.chaves, simulado: config.demo });
+  const llm = criarClienteLLM({ chaves, simulado: config.demo });
   const entrada = validarEntrada(estado.entrada);
   if (tipo === 'plano') return gerarPlano(llm, entrada);
   if (tipo === 'slides') return gerarSlides(llm, entrada, extra.plano);

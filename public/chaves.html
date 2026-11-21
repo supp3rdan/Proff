@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Como gerar as chaves de API · Proff</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topo">
+    <a class="marca marca-link" href="./">
+      <span class="logo">π</span>
+      <div>
+        <h1>Proff</h1>
+        <p>Como gerar as chaves de API</p>
+      </div>
+    </a>
+    <a class="botao" href="./">← Voltar ao Proff</a>
+  </header>
+
+  <main class="guia">
+    <section class="cartao">
+      <h2>Para que serve a chave?</h2>
+      <p>
+        O Proff usa inteligência artificial de três empresas que oferecem uso <strong>gratuito</strong>:
+        Google Gemini, Groq e OpenRouter. A chave de API é como uma senha que libera esse uso para você.
+      </p>
+      <ul>
+        <li><strong>Basta uma chave</strong> para o Proff funcionar. Recomendamos começar pelo <a href="#gemini">Google Gemini</a>.</li>
+        <li>Com duas ou mais, o Proff troca de provedor sozinho quando um atinge o limite, e confere o gabarito com um modelo diferente.</li>
+        <li>Nenhuma delas pede cartão de crédito.</li>
+        <li>Se você não colar nenhuma chave, o Proff usa as <strong>chaves padrão</strong> do projeto (quando houver). Elas são compartilhadas por todos os professores, então podem atingir o limite do dia.</li>
+      </ul>
+      <nav class="indice">
+        <a class="botao" href="#gemini">1. Google Gemini</a>
+        <a class="botao" href="#groq">2. Groq</a>
+        <a class="botao" href="#openrouter">3. OpenRouter</a>
+        <a class="botao" href="#usar">Colar no Proff</a>
+      </nav>
+    </section>
+
+    <section class="cartao" id="gemini">
+      <span class="etiqueta">Recomendado</span>
+      <h2>1. Google Gemini</h2>
+      <p class="meta">Precisa de uma conta Google (Gmail). Cota diária generosa.</p>
+      <ol class="passos">
+        <li>Acesse o <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio → API keys</a> e entre com sua conta Google.</li>
+        <li>Aceite os termos de uso, se aparecerem.</li>
+        <li>Clique em <strong>Create API key</strong> (Criar chave de API). Se ele pedir um projeto, escolha o sugerido ou crie um novo.</li>
+        <li>Copie a chave gerada (começa com <code>AIza</code>).</li>
+      </ol>
+      <p class="aviso aviso-atencao">
+        No plano gratuito, o Google pode usar os pedidos para melhorar os produtos dele. Não coloque dados de alunos nas observações.
+      </p>
+    </section>
+
+    <section class="cartao" id="groq">
+      <h2>2. Groq</h2>
+      <p class="meta">Pode entrar com Google, GitHub ou e-mail. Muito rápido.</p>
+      <ol class="passos">
+        <li>Acesse o <a href="https://console.groq.com/keys" target="_blank" rel="noopener">GroqCloud → API Keys</a> e crie sua conta ou entre.</li>
+        <li>Clique em <strong>Create API Key</strong>.</li>
+        <li>Dê um nome (ex.: <code>proff</code>) e confirme.</li>
+        <li>Copie a chave na hora (começa com <code>gsk_</code>): ela só aparece uma vez.</li>
+      </ol>
+    </section>
+
+    <section class="cartao" id="openrouter">
+      <h2>3. OpenRouter</h2>
+      <p class="meta">Dá acesso a vários modelos gratuitos (até 50 pedidos por dia sem créditos).</p>
+      <ol class="passos">
+        <li>Acesse o <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter → Keys</a> e crie sua conta ou entre.</li>
+        <li>Clique em <strong>Create API Key</strong>, dê um nome e confirme. Se quiser, defina um limite de crédito: com limite 0, ela nunca gera cobrança.</li>
+        <li>Copie a chave na hora (começa com <code>sk-or-</code>).</li>
+        <li>Em <a href="https://openrouter.ai/settings/privacy" target="_blank" rel="noopener">Settings → Privacy</a>, permita o uso de modelos gratuitos. Sem isso, os modelos <code>:free</code> podem recusar o pedido.</li>
+      </ol>
+    </section>
+
+    <section class="cartao" id="usar">
+      <h2>Colar a chave no Proff</h2>
+      <ol class="passos">
+        <li>Abra o <a href="./">Proff</a>.</li>
+        <li>Clique em <strong>Chaves de API</strong>, logo abaixo do campo de observações.</li>
+        <li>Cole cada chave no campo do provedor correspondente. Ela é salva na hora.</li>
+        <li>Para voltar às chaves padrão do projeto, apague os campos ou clique em <strong>Voltar às chaves padrão</strong>.</li>
+      </ol>
+      <p class="dica">
+        A chave fica salva só no navegador em que você colou e vai direto para o provedor de IA, sem passar por nenhum servidor do Proff.
+        Em computadores compartilhados (como os da escola), apague a chave ao terminar.
+      </p>
+    </section>
+
+    <section class="cartao" id="dono">
+      <h2>Para quem mantém o Proff: chaves padrão</h2>
+      <p>
+        As chaves padrão <strong>não ficam no código</strong>, porque o repositório e o site são públicos.
+        Elas ficam guardadas como segredos no GitHub e são escritas no arquivo <code>config.js</code> só na hora da publicação.
+      </p>
+      <ol class="passos">
+        <li>No repositório, abra <a href="https://github.com/supp3rdan/Proff/settings/secrets/actions" target="_blank" rel="noopener">Settings → Secrets and variables → Actions</a>.</li>
+        <li>Clique em <strong>New repository secret</strong> e crie um segredo para cada chave que tiver:
+          <code>GEMINI_API_KEY</code>, <code>GROQ_API_KEY</code> e <code>OPENROUTER_API_KEY</code>.</li>
+        <li>Em <a href="https://github.com/supp3rdan/Proff/actions/workflows/pages.yml" target="_blank" rel="noopener">Actions → Publicar no GitHub Pages</a>, clique em <strong>Run workflow</strong> para publicar de novo com as chaves.</li>
+      </ol>
+      <p class="aviso aviso-atencao">
+        Quem abrir o site consegue ver as chaves padrão no arquivo <code>config.js</code>. Como não há cartão cadastrado, não existe cobrança,
+        mas outra pessoa pode gastar a cota grátis. Para proteger a chave do Gemini, restrinja-a ao endereço do site:
+      </p>
+      <ol class="passos">
+        <li>Abra o <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud → Credenciais</a> com a mesma conta e o mesmo projeto da chave.</li>
+        <li>Clique na chave e, em <strong>Restrições de aplicativos</strong>, escolha <strong>Sites</strong>.</li>
+        <li>Adicione <code>https://supp3rdan.github.io/*</code> e salve. A chave passa a funcionar só no Proff publicado.</li>
+      </ol>
+      <p class="dica">
+        Groq e OpenRouter não têm esse tipo de restrição. No OpenRouter, um limite de crédito 0 na chave garante que ela nunca gere cobrança.
+        Se perceber uso estranho, apague a chave no site do provedor e crie outra.
+      </p>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <a href="./">Voltar ao Proff</a>
+  </footer>
+</body>
+</html>

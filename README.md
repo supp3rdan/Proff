@@ -34,9 +34,19 @@ Acesse **https://supp3rdan.github.io/Proff/**.
 
 No Pages não há servidor, então o Proff roda inteiro no navegador:
 
-1. Abra **Chaves de API** e cole pelo menos uma chave (links para criar estão na própria tela).
-2. A chave fica salva **só no seu navegador** e vai direto para o provedor de IA.
-3. Sem chave, marque **Modo demonstração** para ver uma aula de exemplo.
+1. Por padrão, ele usa as **chaves padrão** do projeto (veja abaixo).
+2. O professor pode colar as próprias chaves em **Chaves de API**; elas têm prioridade e ficam salvas **só no navegador dele**.
+3. Sem nenhuma chave, dá para marcar **Modo demonstração** e ver uma aula de exemplo.
+
+Passo a passo para gerar as chaves: página [`chaves.html`](https://supp3rdan.github.io/Proff/chaves.html).
+
+### Chaves padrão (arquivo `public/config.js`)
+
+As chaves padrão **não ficam no código**: o repositório e o site são públicos. Cadastre-as em
+*Settings → Secrets and variables → Actions* com os nomes `GEMINI_API_KEY`, `GROQ_API_KEY` e `OPENROUTER_API_KEY`.
+Na publicação, o workflow roda `scripts/gerar-config.js` e escreve essas chaves no `config.js` do site.
+
+> Quem abrir o site consegue ver as chaves padrão no `config.js`. Restrinja a chave do Gemini ao endereço `https://supp3rdan.github.io/*` no Google Cloud (detalhes em `chaves.html`).
 
 Publicação: o workflow `.github/workflows/pages.yml` roda os testes e publica a pasta `public/` a cada push na `main` (em *Settings → Pages*, a origem fica como **GitHub Actions**). Se preferir *Deploy from a branch* (`main` / `(root)`), o `index.html` da raiz redireciona para `public/`.
 

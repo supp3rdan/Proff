@@ -157,3 +157,16 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .grade-chaves label { font-size: .9rem; }
 .grade-chaves a { font-weight: 400; font-size: .85rem; color: var(--azul); }
 .opcao { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.botao-pequeno { padding: 6px 12px; font-size: .88rem; margin-top: 8px; }
+.rodape a, .dica a { color: var(--azul); }
+
+/* página de chaves */
+.marca-link { text-decoration: none; color: inherit; }
+.guia { display: grid; gap: 16px; }
+.guia h2 { margin: 0 0 6px; color: var(--azul); }
+.guia a { color: var(--azul); }
+.guia .botao { text-decoration: none; }
+.guia code { background: var(--azul-claro); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+.indice { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.passos { padding-left: 22px; }
+.passos li { margin-bottom: 6px; }

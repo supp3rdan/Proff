@@ -10,6 +10,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+  <script src="config.js"></script>
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -50,14 +51,16 @@
 
       <details class="campo-inteiro config-chaves" id="config-chaves" hidden>
         <summary>Chaves de API <span id="resumo-chaves" class="opcional"></span></summary>
+        <p class="dica" id="aviso-padrao"></p>
         <p class="dica">
-          As chaves ficam salvas só neste navegador e vão direto para o provedor de IA, sem passar por nenhum servidor do Proff.
-          Basta uma, e todas são grátis e sem cartão. Com duas ou mais, a conferência do gabarito usa um modelo diferente.
+          As suas chaves ficam salvas só neste navegador e vão direto para o provedor de IA.
+          São grátis e sem cartão: <a href="chaves.html" target="_blank">veja como gerar</a>.
         </p>
         <div id="campos-chaves" class="grade-chaves"></div>
         <label class="opcao">
           <input type="checkbox" id="modo-demo"> Modo demonstração (gera uma aula de exemplo, sem chave)
         </label>
+        <button type="button" class="botao botao-pequeno" id="botao-limpar-chaves" hidden>Voltar às chaves padrão</button>
       </details>
 
       <div class="campo campo-inteiro" id="campo-senha" hidden>
@@ -112,7 +115,7 @@
   </main>
 
   <footer class="rodape">
-    Conteúdo gerado por IA. Revise antes de usar em sala.
+    Conteúdo gerado por IA. Revise antes de usar em sala. · <a href="chaves.html">Como gerar as chaves de API</a>
   </footer>
 </body>
 </html>
