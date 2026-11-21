@@ -44,6 +44,13 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      # Versão nos endereços dos arquivos (app.js?v=abc1234): cada publicação
+      # obriga o navegador a baixar os arquivos novos em vez de usar o cache.
+      - name: Marcar versão nos arquivos
+        run: |
+          VERSAO="${GITHUB_SHA::7}"
+          grep -rl "__VERSAO__" public | xargs sed -i "s/__VERSAO__/${VERSAO}/g"
+          echo "Versão publicada: ${VERSAO}"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

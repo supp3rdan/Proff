@@ -1,8 +1,8 @@
-import { ASSUNTOS } from './assuntos.js';
-import { el, anexar, montarSlide, renderizarMatematica } from './slides-render.js';
-import { exportarPptx } from './pptx.js';
-import { criarClienteLLM, PROVEDORES } from './core/llm.js';
-import { gerarPlano, gerarSlides, gerarProva, validarEntrada } from './core/gerador.js';
+import { ASSUNTOS } from './assuntos.js?v=__VERSAO__';
+import { el, anexar, montarSlide, renderizarMatematica } from './slides-render.js?v=__VERSAO__';
+import { exportarPptx } from './pptx.js?v=__VERSAO__';
+import { criarClienteLLM, PROVEDORES } from './core/llm.js?v=__VERSAO__';
+import { gerarPlano, gerarSlides, gerarProva, validarEntrada } from './core/gerador.js?v=__VERSAO__';
 
 const CHAVE_ULTIMA = 'proff:ultima';
 const CHAVE_SENHA = 'proff:senha';

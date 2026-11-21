@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="slides.css">
+  <link rel="stylesheet" href="slides.css?v=__VERSAO__">
   <script defer src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
@@ -20,7 +20,7 @@
   </div>
 
   <script type="module">
-    import { montarSlide, renderizarMatematica, el } from './slides-render.js';
+    import { montarSlide, renderizarMatematica, el } from './slides-render.js?v=__VERSAO__';
 
     let dados = null;
     try { dados = JSON.parse(localStorage.getItem('proff:ultima')); } catch { /* sem armazenamento */ }

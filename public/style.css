@@ -184,3 +184,4 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .indice { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .passos { padding-left: 22px; }
 .passos li { margin-bottom: 6px; }
+.versao { font-size: .75rem; opacity: .7; }

@@ -6,7 +6,7 @@ import {
   promptProva,
   promptResolver,
   promptComparar,
-} from './prompts.js';
+} from './prompts.js?v=__VERSAO__';
 
 export class ErroEntrada extends Error {}
 

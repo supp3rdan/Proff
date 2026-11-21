@@ -5,7 +5,7 @@
 // Este arquivo não usa nada específico do Node: roda no servidor (Vercel /
 // server.js) e também direto no navegador (GitHub Pages).
 
-import { respostaSimulada } from './mock.js';
+import { respostaSimulada } from './mock.js?v=__VERSAO__';
 
 export const PROVEDORES = [
   {

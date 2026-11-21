@@ -4,7 +4,7 @@
 // A IA só fornece o conteúdo (títulos, tópicos, passos, respostas); nada do
 // arquivo é gerado por ela. As cores seguem as da interface (style.css/slides.css).
 
-import { latexParaTexto, segmentar, soMatematica, formulaParaImagem } from './pptx-matematica.js';
+import { latexParaTexto, segmentar, soMatematica, formulaParaImagem } from './pptx-matematica.js?v=__VERSAO__';
 
 export { latexParaTexto };
 
