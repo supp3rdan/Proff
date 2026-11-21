@@ -15,6 +15,8 @@ export const PROVEDORES = [
     // Em ordem de preferência. Se um modelo for desativado ou não tiver cota
     // grátis, o Proff tenta o próximo (e também o modelo que o erro sugerir).
     modelos: ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'],
+    // Raciocínio curto: os modelos novos "pensam" bastante por padrão e demoram.
+    extras: { reasoning_effort: 'low' },
     ondeCriarChave: 'https://aistudio.google.com/app/apikey',
   },
   {
@@ -22,6 +24,7 @@ export const PROVEDORES = [
     rotulo: 'Groq',
     url: 'https://api.groq.com/openai/v1/chat/completions',
     modelos: ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'],
+    extras: { reasoning_effort: 'low' },
     ondeCriarChave: 'https://console.groq.com/keys',
   },
   {
@@ -37,6 +40,18 @@ export class ErroLLM extends Error {}
 
 // Modelo que funcionou por provedor (evita repetir tentativas na mesma sessão).
 const MODELO_QUE_FUNCIONOU = new Map();
+// Provedores que recusaram os parâmetros extras (ex.: reasoning_effort).
+const SEM_EXTRAS = new Set();
+
+/** Tempo esgotado vira erro legível e faz tentar um modelo mais leve. */
+function erroDeTempo(erro, modelo) {
+  if (erro?.name === 'TimeoutError' || erro?.name === 'AbortError') {
+    const e = new Error(`${modelo}: demorou demais para responder`);
+    e.trocarModelo = true;
+    return e;
+  }
+  return erro;
+}
 
 /**
  * Monta um erro curto e legível. Marca quando vale tentar outro modelo:
@@ -53,6 +68,7 @@ export function erroHTTP(status, corpo, modelo) {
 
   const erro = new Error(`${modelo}: HTTP ${status} ${String(mensagem).slice(0, 160)}`);
   const texto = String(corpo);
+  erro.semExtras = status === 400 && /reasoning|thinking|unknown name|unrecognized|invalid argument/i.test(texto);
   erro.trocarModelo =
     status === 404 ||
     /no longer available|not found|does not exist|decommissioned|deprecated|not supported/i.test(texto) ||
@@ -69,7 +85,7 @@ export function erroHTTP(status, corpo, modelo) {
  * @param {boolean} [config.simulado]  responde com a aula de exemplo, sem chamar API
  * @param {number}  [config.timeoutMs]
  */
-export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, timeoutMs = 60000 } = {}) {
+export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, timeoutMs = 120000 } = {}) {
   const ativos = PROVEDORES.filter((p) => chaves[p.nome]);
 
   /**
@@ -119,6 +135,12 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
         return texto;
       } catch (erro) {
         ultimoErro = erro;
+        if (erro.semExtras && !SEM_EXTRAS.has(provedor.nome)) {
+          // o modelo não aceitou reasoning_effort: repete o mesmo modelo sem ele
+          SEM_EXTRAS.add(provedor.nome);
+          i--;
+          continue;
+        }
         if (!erro.trocarModelo) throw erro;
         // o próprio erro às vezes indica o modelo novo ("use models/gemini-x-flash")
         if (erro.modeloSugerido && !candidatos.includes(erro.modeloSugerido)) {
@@ -136,29 +158,35 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
   }
 
   async function chamarModelo(provedor, modelo, sistema, usuario, temperatura) {
-    const resposta = await fetch(provedor.url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${chaves[provedor.nome]}`,
-      },
-      body: JSON.stringify({
-        model: modelo,
-        temperature: temperatura,
-        messages: [
-          { role: 'system', content: sistema },
-          { role: 'user', content: usuario },
-        ],
-        response_format: { type: 'json_object' },
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    const extras = SEM_EXTRAS.has(provedor.nome) ? {} : provedor.extras || {};
+    const corpo = {
+      model: modelo,
+      temperature: temperatura,
+      messages: [
+        { role: 'system', content: sistema },
+        { role: 'user', content: usuario },
+      ],
+      response_format: { type: 'json_object' },
+      ...extras,
+    };
 
-    if (!resposta.ok) {
-      const detalhe = await resposta.text();
-      throw erroHTTP(resposta.status, detalhe, modelo);
+    let json;
+    try {
+      const resposta = await fetch(provedor.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${chaves[provedor.nome]}`,
+        },
+        body: JSON.stringify(corpo),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!resposta.ok) throw erroHTTP(resposta.status, await resposta.text(), modelo);
+      json = await resposta.json();
+    } catch (erro) {
+      throw erroDeTempo(erro, modelo);
     }
-    const json = await resposta.json();
+
     const texto = json?.choices?.[0]?.message?.content;
     if (!texto) throw new Error(`${modelo}: resposta vazia`);
     return texto;

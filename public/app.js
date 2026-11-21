@@ -168,12 +168,26 @@ async function gerarNoNavegador(tipo, extra) {
   return gerarProva(llm, entrada, extra.plano);
 }
 
+const cronometros = {};
+
 function marcarEtapa(etapa, situacao, mensagem = '') {
   const item = document.querySelector(`#progresso [data-etapa="${etapa}"]`);
   item.dataset.situacao = situacao;
   item.title = mensagem;
   item.querySelector('.detalhe')?.remove();
-  if (mensagem) item.append(el('span', { classe: 'detalhe', texto: ` — ${mensagem}` }));
+  clearInterval(cronometros[etapa]);
+
+  const detalhe = el('span', { classe: 'detalhe' });
+  item.append(detalhe);
+  if (situacao === 'gerando') {
+    // a IA pode levar até 1–2 minutos; mostrar o tempo evita parecer travado
+    const inicio = Date.now();
+    const atualizar = () => (detalhe.textContent = ` — gerando… ${Math.round((Date.now() - inicio) / 1000)} s`);
+    atualizar();
+    cronometros[etapa] = setInterval(atualizar, 1000);
+  } else if (mensagem) {
+    detalhe.textContent = ` — ${mensagem}`;
+  }
 }
 
 $('#form').addEventListener('submit', async (evento) => {

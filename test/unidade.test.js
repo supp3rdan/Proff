@@ -57,3 +57,50 @@ test('troca de modelo quando o modelo foi desativado', async () => {
     globalThis.fetch = original;
   }
 });
+
+test('envia reasoning_effort e repete sem ele se o modelo recusar', async () => {
+  const { criarClienteLLM } = await import('../public/core/llm.js');
+  const corpos = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, opcoes) => {
+    const corpo = JSON.parse(opcoes.body);
+    corpos.push(corpo);
+    if ('reasoning_effort' in corpo) {
+      return new Response(JSON.stringify({ error: { message: 'Invalid JSON payload received. Unknown name "reasoning_effort"' } }), { status: 400 });
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": 1}' } }] }), { status: 200 });
+  };
+  try {
+    const llm = criarClienteLLM({ chaves: { groq: 'x' } });
+    const r = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't' });
+    assert.deepEqual(r.dados, { ok: 1 });
+    assert.equal(corpos[0].reasoning_effort, 'low');
+    assert.equal('reasoning_effort' in corpos[1], false);
+    assert.equal(corpos[1].model, corpos[0].model);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test('tempo esgotado tenta o próximo modelo', async () => {
+  const { criarClienteLLM } = await import('../public/core/llm.js');
+  const usados = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, opcoes) => {
+    const { model } = JSON.parse(opcoes.body);
+    usados.push(model);
+    if (model === 'lento') {
+      await new Promise((_, rej) => opcoes.signal.addEventListener('abort', () => rej(opcoes.signal.reason)));
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok": 2}' } }] }), { status: 200 });
+  };
+  try {
+    const llm = criarClienteLLM({ chaves: { openrouter: 'x' }, modelos: { openrouter: 'lento' }, timeoutMs: 50 });
+    const vivo = setInterval(() => {}, 10); // o timer do AbortSignal.timeout não segura o processo no Node
+    const r = await llm.gerarJSON({ sistema: 's', usuario: 'u', tarefa: 't' }).finally(() => clearInterval(vivo));
+    assert.deepEqual(r.dados, { ok: 2 });
+    assert.deepEqual(usados, ['lento', 'openrouter/free']);
+  } finally {
+    globalThis.fetch = original;
+  }
+});

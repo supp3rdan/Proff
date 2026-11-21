@@ -99,7 +99,7 @@ A pasta `public/` vira o site e cada arquivo de `api/` vira uma função serverl
 | `GEMINI_MODEL`, `GROQ_MODEL`, `OPENROUTER_MODEL` | Troca o modelo padrão de cada provedor. |
 | `APP_SENHA` | Código de acesso pedido na tela. |
 | `LLM_MOCK=1` | Modo simulado, sem chamar nenhuma API. |
-| `LLM_TIMEOUT_MS` | Tempo máximo por chamada (padrão 60000). |
+| `LLM_TIMEOUT_MS` | Tempo máximo por chamada (padrão 120000). |
 
 ## Estrutura
 
