@@ -25,20 +25,19 @@ A IA escreve o conteúdo de cada parte; o código garante a ordem, corrige slide
 
 ## Como funciona
 
-```
-Navegador (public/)                   Servidor (api/ + lib/)                 APIs gratuitas
-────────────────────                  ─────────────────────                  ──────────────
-formulário ── POST /api/gerar ──▶  1. plano  ─────────────────┐
-                                    2. slides (usa o plano)    ├──▶ Gemini → Groq → OpenRouter
-                                    3. prova  (usa o plano)    │     (respostas em JSON)
-                                       └─ resolve de novo e    │
-                                          compara o gabarito ──┘
-◀── JSON ── monta plano, slides (Reveal.js + KaTeX), prova e .pptx
-```
+O professor faz três ações separadas. Cada uma é dividida em **chamadas pequenas** à IA (mais rápidas e com mais chance de dar certo):
+
+| Ação | Chamadas à IA | O que o código faz |
+| --- | --- | --- |
+| **Gerar plano de aula** | 1. visão geral do tema → 2. plano de aula baseado nela | — |
+| **Gerar slides** (aba Slides) | para cada uma das 5 partes: material didático → formatação em slides | capa, divisores, resumo, ordem e layout |
+| **Gerar avaliação** (aba Avaliação) | questões objetivas → questões discursivas → conferência do gabarito | numeração, junção e marcação do que revisar |
+
+Se uma parte falhar, o botão passa a mostrar **Gerar partes que faltam** e refaz só o que não deu certo.
 
 A lógica de geração (`public/core/`) é a mesma nos dois modos:
-- **com servidor** (`npm run dev` ou Vercel): as chaves ficam no servidor;
-- **sem servidor** (GitHub Pages): o navegador chama a IA direto, com a chave que o professor colou.
+- **com servidor** (`npm run dev` ou Vercel): as chaves ficam no servidor e cada etapa é uma requisição a `POST /api/gerar`;
+- **sem servidor** (GitHub Pages): o navegador chama a IA direto, com a chave do professor ou a chave padrão.
 
 ## Usar pelo GitHub Pages (sem servidor)
 

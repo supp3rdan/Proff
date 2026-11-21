@@ -2,14 +2,23 @@ import { ASSUNTOS } from './assuntos.js?v=__VERSAO__';
 import { el, anexar, montarSlide, renderizarMatematica } from './slides-render.js?v=__VERSAO__';
 import { exportarPptx } from './pptx.js?v=__VERSAO__';
 import { criarClienteLLM, PROVEDORES, corrigirChaves, provedorDaChave } from './core/llm.js?v=__VERSAO__';
-import { gerarPlano, gerarSlides, gerarProva, validarEntrada } from './core/gerador.js?v=__VERSAO__';
+import {
+  gerarVisaoGeral, gerarPlano, gerarMaterial, formatarSlides, gerarQuestoes, conferirProva,
+  montarProva, montarApresentacao, validarEntrada,
+} from './core/gerador.js?v=__VERSAO__';
+import { SECOES } from './core/estrutura.js?v=__VERSAO__';
 
 const CHAVE_ULTIMA = 'proff:ultima';
 const CHAVE_SENHA = 'proff:senha';
 const CHAVE_CONFIG = 'proff:config';
 const $ = (sel) => document.querySelector(sel);
 
-const estado = { entrada: null, plano: null, slides: null, prova: null, verificacao: null };
+// visao/plano: plano de aula · secoes → slides: apresentação · questoes → prova: avaliação
+const estado = {
+  entrada: null, visao: null, plano: null,
+  secoes: {}, slides: null,
+  questoes: {}, prova: null, verificacao: null,
+};
 
 // ---------- armazenamento local (pode falhar em modo privado) ----------
 const armazenamento = {
@@ -180,16 +189,33 @@ async function gerarNoNavegador(tipo, extra) {
     throw new Error('Cole pelo menos uma chave de API em "Chaves de API" ou marque o modo demonstração.');
   }
   const llm = criarClienteLLM({ chaves, simulado: config.demo });
-  const entrada = validarEntrada(estado.entrada);
-  if (tipo === 'plano') return gerarPlano(llm, entrada);
-  if (tipo === 'slides') return gerarSlides(llm, entrada, extra.plano);
-  return gerarProva(llm, entrada, extra.plano);
+  const e = validarEntrada(estado.entrada);
+  switch (tipo) {
+    case 'visao': return gerarVisaoGeral(llm, e);
+    case 'plano': return gerarPlano(llm, e, extra.visao);
+    case 'material': return gerarMaterial(llm, e, extra.plano, extra.visao, extra.secao);
+    case 'formatar': return formatarSlides(llm, e, extra.secao, extra.material);
+    case 'questoes': return gerarQuestoes(llm, e, extra.plano, extra.visao, extra.tipoQuestao);
+    case 'conferir': return conferirProva(llm, extra.questoes);
+    default: throw new Error(`Etapa desconhecida: ${tipo}`);
+  }
 }
 
+// ---------- progresso ----------
 const cronometros = {};
+
+/** Recria a lista de etapas para a ação atual. */
+function iniciarProgresso(itens) {
+  Object.values(cronometros).forEach(clearInterval);
+  $('#progresso').replaceChildren(...itens.map(([id, rotulo]) => el('li', { 'data-etapa': id, 'data-situacao': 'aguardando', texto: rotulo })));
+  $('#progresso').hidden = false;
+  $('#erro-geral').hidden = true;
+  $('#progresso').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 function marcarEtapa(etapa, situacao, mensagem = '') {
   const item = document.querySelector(`#progresso [data-etapa="${etapa}"]`);
+  if (!item) return;
   item.dataset.situacao = situacao;
   item.title = mensagem;
   item.querySelector('.detalhe')?.remove();
@@ -198,9 +224,10 @@ function marcarEtapa(etapa, situacao, mensagem = '') {
   const detalhe = el('span', { classe: 'detalhe' });
   item.append(detalhe);
   if (situacao === 'gerando') {
-    // a IA pode levar até 1–2 minutos; mostrar o tempo evita parecer travado
+    // mostrar o tempo evita parecer travado
     const inicio = Date.now();
-    const atualizar = () => (detalhe.textContent = ` — gerando… ${Math.round((Date.now() - inicio) / 1000)} s`);
+    const rotulo = mensagem || 'gerando';
+    const atualizar = () => (detalhe.textContent = ` — ${rotulo}… ${Math.round((Date.now() - inicio) / 1000)} s`);
     atualizar();
     cronometros[etapa] = setInterval(atualizar, 1000);
   } else if (mensagem) {
@@ -208,75 +235,146 @@ function marcarEtapa(etapa, situacao, mensagem = '') {
   }
 }
 
-$('#form').addEventListener('submit', async (evento) => {
-  evento.preventDefault();
-  const botao = $('#botao-gerar');
-  botao.disabled = true;
-  botao.textContent = 'Gerando…';
-  $('#erro-geral').hidden = true;
-  $('#resultado').hidden = true;
-  $('#progresso').hidden = false;
-  ['plano', 'slides', 'prova'].forEach((e) => marcarEtapa(e, 'aguardando'));
+function mostrarErro(mensagem) {
+  $('#erro-geral').textContent = mensagem;
+  $('#erro-geral').hidden = false;
+}
+
+// Uma ação por vez (plano, slides ou avaliação).
+let ocupado = false;
+async function comBloqueio(botao, textoOcupado, acao) {
+  if (ocupado) return;
+  ocupado = true;
+  const original = botao.textContent;
+  document.querySelectorAll('.botao-gerar').forEach((b) => (b.disabled = true));
+  botao.textContent = textoOcupado;
   if ($('#senha').value) armazenamento.gravar(CHAVE_SENHA, $('#senha').value);
   await statusPronto;
-
-  Object.assign(estado, {
-    entrada: {
-      serie: $('#serie').value,
-      assunto: $('#assunto').value.trim(),
-      observacoes: $('#observacoes').value.trim(),
-    },
-    plano: null, slides: null, prova: null, verificacao: null,
-  });
-
   try {
-    marcarEtapa('plano', 'gerando');
-    const { plano, provedor } = await executar('plano');
-    estado.plano = plano;
-    marcarEtapa('plano', 'pronto', provedor);
-    mostrarResultado();
-
-    marcarEtapa('slides', 'gerando');
-    marcarEtapa('prova', 'gerando');
-    const [rSlides, rProva] = await Promise.allSettled([
-      executar('slides', { plano }),
-      executar('prova', { plano }),
-    ]);
-
-    if (rSlides.status === 'fulfilled') {
-      estado.slides = rSlides.value.slides;
-      marcarEtapa('slides', 'pronto', rSlides.value.provedor);
-    } else {
-      marcarEtapa('slides', 'erro', rSlides.reason.message);
-    }
-
-    if (rProva.status === 'fulfilled') {
-      estado.prova = rProva.value.prova;
-      estado.verificacao = rProva.value.verificacao;
-      marcarEtapa('prova', 'pronto', rProva.value.provedor);
-    } else {
-      marcarEtapa('prova', 'erro', rProva.reason.message);
-    }
-
+    await acao();
+  } catch (erro) {
+    mostrarErro(erro.message);
+  } finally {
+    ocupado = false;
+    botao.textContent = original;
+    document.querySelectorAll('.botao-gerar').forEach((b) => (b.disabled = false));
     armazenamento.gravar(CHAVE_ULTIMA, estado);
     mostrarResultado();
-  } catch (erro) {
-    marcarEtapa('plano', 'erro', erro.message);
-    $('#erro-geral').textContent = erro.message;
-    $('#erro-geral').hidden = false;
-  } finally {
-    botao.disabled = false;
-    botao.textContent = 'Gerar aula e prova';
   }
+}
+
+/** Executa uma etapa marcando o progresso; devolve null se falhar. */
+async function etapa(id, rotulo, tipo, extra) {
+  marcarEtapa(id, 'gerando', rotulo);
+  try {
+    const r = await executar(tipo, extra);
+    return r;
+  } catch (erro) {
+    marcarEtapa(id, 'erro', erro.message);
+    throw erro;
+  }
+}
+
+// ---------- 1. plano de aula: visão geral → plano ----------
+$('#form').addEventListener('submit', (evento) => {
+  evento.preventDefault();
+  comBloqueio($('#botao-gerar'), 'Gerando o plano…', async () => {
+    Object.assign(estado, {
+      entrada: {
+        serie: $('#serie').value,
+        assunto: $('#assunto').value.trim(),
+        observacoes: $('#observacoes').value.trim(),
+      },
+      visao: null, plano: null, secoes: {}, slides: null, questoes: {}, prova: null, verificacao: null,
+    });
+    $('#resultado').hidden = true;
+    iniciarProgresso([['visao', 'Visão geral do tema'], ['plano', 'Plano de aula']]);
+
+    const { visao, provedor: p1 } = await etapa('visao', 'pesquisando o tema', 'visao');
+    estado.visao = visao;
+    marcarEtapa('visao', 'pronto', p1);
+
+    const { plano, provedor: p2 } = await etapa('plano', 'montando o plano', 'plano', { visao });
+    estado.plano = plano;
+    marcarEtapa('plano', 'pronto', p2);
+    abrirAba('plano');
+  });
+});
+
+// ---------- 2. slides: para cada parte, material → formatação ----------
+const faltamSecoes = () => SECOES.filter((s) => !estado.secoes?.[s.id]?.length);
+
+$('#botao-gerar-slides').addEventListener('click', () => {
+  comBloqueio($('#botao-gerar-slides'), 'Gerando os slides…', async () => {
+    if (faltamSecoes().length === 0) {
+      estado.secoes = {}; // já estava completo: gera tudo de novo
+      estado.slides = null;
+    }
+    const pendentes = faltamSecoes();
+    iniciarProgresso(SECOES.map((s) => [s.id, `Parte ${s.numero}: ${s.titulo}`]));
+    SECOES.filter((s) => !pendentes.includes(s)).forEach((s) => marcarEtapa(s.id, 'pronto', 'já gerada'));
+
+    const falhas = [];
+    for (const s of pendentes) {
+      try {
+        const extra = { plano: estado.plano, visao: estado.visao, secao: s.id };
+        const { material } = await etapa(s.id, 'escrevendo o material', 'material', extra);
+        const { slides, provedor } = await etapa(s.id, 'montando os slides', 'formatar', { secao: s.id, material });
+        estado.secoes[s.id] = slides;
+        armazenamento.gravar(CHAVE_ULTIMA, estado);
+        marcarEtapa(s.id, 'pronto', `${slides.length} slide${slides.length > 1 ? 's' : ''} · ${provedor}`);
+      } catch {
+        falhas.push(s.titulo); // segue para as outras partes
+      }
+    }
+
+    if (falhas.length) {
+      throw new Error(`Não foi possível gerar: ${falhas.join(', ')}. Clique em "Gerar partes que faltam" para tentar de novo.`);
+    }
+    estado.slides = montarApresentacao(estado.plano, estado.secoes, estado.entrada);
+    abrirAba('slides');
+  });
+});
+
+// ---------- 3. avaliação: objetivas → discursivas → conferência ----------
+const TIPOS_QUESTAO = [['multipla', 'Questões de múltipla escolha'], ['discursiva', 'Questões discursivas']];
+
+$('#botao-gerar-prova').addEventListener('click', () => {
+  comBloqueio($('#botao-gerar-prova'), 'Gerando a avaliação…', async () => {
+    if (estado.prova) {
+      estado.questoes = {}; // já existia: gera outra
+      estado.prova = null;
+      estado.verificacao = null;
+    }
+    iniciarProgresso([...TIPOS_QUESTAO, ['conferencia', 'Conferência do gabarito']]);
+
+    for (const [tipo, rotulo] of TIPOS_QUESTAO) {
+      if (estado.questoes[tipo]) {
+        marcarEtapa(tipo, 'pronto', 'já gerada');
+        continue;
+      }
+      const extra = { plano: estado.plano, visao: estado.visao, tipoQuestao: tipo };
+      const { questoes, provedor } = await etapa(tipo, `criando ${rotulo.toLowerCase()}`, 'questoes', extra);
+      estado.questoes[tipo] = questoes;
+      armazenamento.gravar(CHAVE_ULTIMA, estado);
+      marcarEtapa(tipo, 'pronto', `${questoes.length} · ${provedor}`);
+    }
+
+    const prova = montarProva([...estado.questoes.multipla, ...estado.questoes.discursiva], estado.plano, estado.entrada);
+    const { questoes, verificacao } = await etapa('conferencia', 'resolvendo de novo para conferir', 'conferir', { questoes: prova.questoes });
+    estado.prova = { ...prova, questoes };
+    estado.verificacao = verificacao;
+    marcarEtapa('conferencia', verificacao.concluida ? 'pronto' : 'erro', verificacao.concluida ? verificacao.provedor : 'não foi possível conferir');
+    abrirAba('prova');
+  });
 });
 
 // ---------- abas ----------
-document.querySelectorAll('.aba').forEach((aba) =>
-  aba.addEventListener('click', () => {
-    document.querySelectorAll('.aba').forEach((a) => a.classList.toggle('ativa', a === aba));
-    document.querySelectorAll('.painel').forEach((p) => (p.hidden = p.dataset.painel !== aba.dataset.aba));
-  })
-);
+function abrirAba(nome) {
+  document.querySelectorAll('.aba').forEach((a) => a.classList.toggle('ativa', a.dataset.aba === nome));
+  document.querySelectorAll('.painel').forEach((p) => (p.hidden = p.dataset.painel !== nome));
+}
+document.querySelectorAll('.aba').forEach((aba) => aba.addEventListener('click', () => abrirAba(aba.dataset.aba)));
 
 // ---------- impressão ----------
 document.querySelectorAll('[data-imprimir]').forEach((botao) =>
@@ -314,7 +412,7 @@ function cabecalhoDocumento(titulo) {
 function renderizarPlano() {
   const p = estado.plano;
   const alvo = $('#conteudo-plano');
-  if (!p) return alvo.replaceChildren(el('p', { classe: 'vazio', texto: 'Gerando…' }));
+  if (!p) return alvo.replaceChildren(el('p', { classe: 'vazio', texto: 'Gere o plano de aula pelo formulário acima.' }));
 
   const habilidades = p.habilidades_bncc?.length
     ? el('ul', {}, p.habilidades_bncc.map((h) =>
@@ -347,9 +445,19 @@ function renderizarPlano() {
 function renderizarSlides() {
   const alvo = $('#conteudo-slides');
   const prontos = Boolean(estado.slides?.slides?.length);
-  $('#botao-apresentar').disabled = !prontos;
-  $('#botao-pptx').disabled = !prontos;
-  if (!prontos) return alvo.replaceChildren(el('p', { classe: 'vazio', texto: estado.plano ? 'Slides não gerados.' : 'Gerando…' }));
+  const feitas = SECOES.length - faltamSecoes().length;
+  $('#botao-apresentar').hidden = !prontos;
+  $('#botao-pptx').hidden = !prontos;
+  $('#botao-gerar-slides').hidden = !estado.plano;
+  $('#botao-gerar-slides').textContent = prontos
+    ? 'Gerar slides de novo'
+    : feitas > 0 ? `Gerar partes que faltam (${SECOES.length - feitas})` : 'Gerar slides';
+  $('#dica-slides').hidden = !prontos;
+  if (!prontos) {
+    return alvo.replaceChildren(el('p', { classe: 'vazio', texto: estado.plano
+      ? 'Os slides são criados a partir do plano de aula, uma parte por vez: introdução, teoria, fórmulas, aplicações e prática.'
+      : 'Gere o plano de aula primeiro.' }));
+  }
 
   substituir(alvo,
     ...estado.slides.slides.map((s, i) => {
@@ -367,7 +475,16 @@ function renderizarSlides() {
 function renderizarProva() {
   const prova = estado.prova;
   const alvo = $('#conteudo-prova');
-  if (!prova) return alvo.replaceChildren(el('p', { classe: 'vazio', texto: estado.plano ? 'Prova não gerada.' : 'Gerando…' }));
+  $('#botao-gerar-prova').hidden = !estado.plano;
+  $('#botao-gerar-prova').textContent = prova
+    ? 'Gerar outra avaliação'
+    : Object.keys(estado.questoes || {}).length ? 'Continuar a avaliação' : 'Gerar avaliação';
+  $('#botao-imprimir-prova').hidden = !prova;
+  if (!prova) {
+    return alvo.replaceChildren(el('p', { classe: 'vazio', texto: estado.plano
+      ? 'A avaliação é criada a partir do plano de aula, com gabarito conferido automaticamente.'
+      : 'Gere o plano de aula primeiro.' }));
+  }
 
   substituir(alvo,
     ...cabecalhoDocumento(prova.titulo),
@@ -388,7 +505,8 @@ function renderizarGabarito() {
   const alvo = $('#conteudo-gabarito');
   const aviso = $('#aviso-verificacao');
   aviso.replaceChildren();
-  if (!prova) return alvo.replaceChildren(el('p', { classe: 'vazio', texto: estado.plano ? 'Prova não gerada.' : 'Gerando…' }));
+  $('#botao-imprimir-gabarito').hidden = !prova;
+  if (!prova) return alvo.replaceChildren(el('p', { classe: 'vazio', texto: 'O gabarito aparece depois que a avaliação for gerada.' }));
 
   const v = estado.verificacao;
   if (v?.concluida && v.revisar.length === 0) {
@@ -433,7 +551,7 @@ $('#botao-pptx').addEventListener('click', async () => {
 // ---------- restaura a última geração (fica no fim: usa funções e constantes acima) ----------
 const anterior = armazenamento.ler(CHAVE_ULTIMA);
 if (anterior?.plano) {
-  Object.assign(estado, anterior);
+  Object.assign(estado, { secoes: {}, questoes: {} }, anterior);
   $('#serie').value = anterior.entrada.serie;
   preencherAssuntos();
   $('#assunto').value = anterior.entrada.assunto;

@@ -2,6 +2,8 @@
 // Vêm como texto com LaTeX de barra simples, igual muitos modelos respondem,
 // para exercitar o reparo feito em extrairJSON.
 
+import { repararLatex } from './llm.js?v=__VERSAO__';
+
 const PLANO = String.raw`{
   "titulo": "Função afim: lei de formação e gráfico",
   "duracao": "2 aulas de 50 minutos",
@@ -65,18 +67,48 @@ const RESOLVER = `{ "respostas": [
   { "numero": 4, "resposta": "B" }, { "numero": 5, "resposta": "2x + 3" }, { "numero": 6, "resposta": "-0,5" }
 ] }`;
 
+const VISAO = String.raw`{
+  "tema": "Função afim",
+  "resumo": "Função afim relaciona duas grandezas em que uma varia de forma constante com a outra. Tem um valor inicial e uma taxa de variação.",
+  "conceitos_chave": ["Valor inicial", "Taxa de variação", "Gráfico é uma reta", "Raiz"],
+  "prerequisitos": ["Plano cartesiano", "Equações do 1º grau"],
+  "formulas": [{ "latex": "f(x) = ax + b", "significado": "a é a taxa de variação e b o valor inicial" }],
+  "aplicacoes_reais": ["Corrida de táxi", "Conta de luz", "Salário com comissão"],
+  "erros_comuns": ["Trocar a e b", "Errar o sinal da raiz"],
+  "curiosidade": "O nome 'afim' vem da ideia de afinidade: a reta mantém sempre a mesma inclinação."
+}`;
+
+const MATERIAL = String.raw`{
+  "conteudo": ["Material de exemplo do modo demonstração."],
+  "ideias_chave": [], "formulas": [], "exemplos": [], "exercicios": []
+}`;
+
+/** JSON de exemplo já interpretado (com o mesmo reparo de LaTeX do cliente real). */
+const ler = (texto) => JSON.parse(repararLatex(texto));
+
 export function respostaSimulada(tarefa, usuario) {
+  const texto = String(usuario);
   switch (tarefa) {
+    case 'visao':
+      return VISAO;
     case 'plano':
       return PLANO;
-    case 'slides':
-      return SLIDES;
-    case 'prova':
-      return PROVA;
+    case 'material':
+      return MATERIAL;
+    case 'formatar': {
+      const secao = texto.match(/\[secao:(\w+)\]/)?.[1];
+      const slides = ler(SLIDES).slides.filter((s) => s.secao === secao);
+      return JSON.stringify({ slides });
+    }
+    case 'prova-multipla':
+    case 'prova-discursiva': {
+      const tipo = tarefa.slice('prova-'.length);
+      return JSON.stringify({ questoes: ler(PROVA).questoes.filter((q) => q.tipo === tipo) });
+    }
     case 'resolver':
       return RESOLVER;
     case 'comparar': {
-      const numeros = [...String(usuario).matchAll(/"numero":(\d+)/g)].map((m) => Number(m[1]));
+      const numeros = [...texto.matchAll(/"numero":(\d+)/g)].map((m) => Number(m[1]));
       return JSON.stringify({ comparacoes: numeros.map((numero) => ({ numero, equivalentes: true })) });
     }
     default:

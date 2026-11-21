@@ -107,3 +107,53 @@ export function organizarAula(deck) {
   }
   return { ...deck, slides };
 }
+
+const TIPO_PERMITIDO = {
+  introducao: ['conteudo'],
+  teoria: ['conteudo'],
+  formulas: ['conteudo'],
+  aplicacoes: ['exemplo', 'conteudo'],
+  pratica: ['exercicio'],
+};
+
+/** Limpa os slides de uma parte vindos da IA (tipo, campos e seção). */
+export function normalizarSlidesDaSecao(secaoId, slides) {
+  return (Array.isArray(slides) ? slides : [])
+    .filter((s) => s && typeof s === 'object' && s.titulo)
+    .map((s) => {
+      const tipo = TIPO_PERMITIDO[secaoId].includes(s.tipo) ? s.tipo : TIPO_PERMITIDO[secaoId][0];
+      const limpo = { ...s, tipo, secao: secaoId };
+      if (Array.isArray(limpo.topicos)) limpo.topicos = limpo.topicos.slice(0, 4);
+      if (secaoId === 'introducao' || secaoId === 'teoria') delete limpo.formula; // teoria sem fórmulas
+      if (tipo === 'exercicio' && !limpo.enunciado) limpo.enunciado = (limpo.topicos || []).join(' ');
+      return limpo;
+    });
+}
+
+/**
+ * Resumo montado por código (sem chamar a IA): as fórmulas principais e as
+ * ideias-chave da teoria; se faltar, os objetivos do plano.
+ */
+export function resumoAutomatico(secoes, plano) {
+  const formulas = (secoes.formulas || []).filter((s) => s.formula).map((s) => `$${s.formula}$`);
+  const ideias = [...(secoes.teoria || []), ...(secoes.introducao || [])].map((s) => s.destaque).filter(Boolean);
+  let topicos = [...formulas.slice(0, 2), ...ideias].slice(0, 4);
+  if (topicos.length < 2) topicos = [...topicos, ...(plano?.objetivos || [])].slice(0, 4);
+  return { tipo: 'resumo', titulo: 'Resumo', topicos, notas: plano?.tarefa_casa ? `Tarefa de casa: ${plano.tarefa_casa}` : '' };
+}
+
+/**
+ * Junta as partes geradas em uma apresentação completa:
+ * capa (código) + partes (IA) + resumo (código), com divisores e ordem padrão.
+ * @param {object} secoes  { introducao: [slides], teoria: [...], ... }
+ */
+export function montarApresentacao(plano, secoes, entrada) {
+  const capa = {
+    tipo: 'capa',
+    titulo: plano?.titulo || entrada.assunto,
+    subtitulo: `${entrada.serie}º ano do Ensino Médio`,
+    notas: (plano?.objetivos || []).length ? `Objetivos: ${plano.objetivos.join('; ')}` : '',
+  };
+  const meio = SECOES.flatMap((s) => secoes[s.id] || []);
+  return organizarAula({ titulo: capa.titulo, slides: [capa, ...meio, resumoAutomatico(secoes, plano)] });
+}
