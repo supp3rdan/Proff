@@ -26,10 +26,11 @@ function jsonSeguro(dados) {
  * @param {(caminho: string) => Promise<string>} [opcoes.lerArquivo]  no servidor, lê do disco
  */
 export async function montarPaginaInterativa(dados, { lerArquivo = lerArquivoPadrao } = {}) {
-  const [css, runtime, expressao] = await Promise.all([
+  const [css, runtime, expressao, latex] = await Promise.all([
     lerArquivo('./pagina.css'),
     lerArquivo('./runtime.js'),
     lerArquivo('../core/expressao.js'),
+    lerArquivo('../core/latex.js'),
   ]);
   const expressaoSemExport = expressao.replace(/^export\s*\{[^}]*\};?\s*$/m, '');
 
@@ -51,6 +52,7 @@ ${css}
 <script>
 window.addEventListener('DOMContentLoaded', function () {
 ${expressaoSemExport}
+${latex.replace(/^export\s+function/m, 'function')}
 ${runtime}
 });
 </script>

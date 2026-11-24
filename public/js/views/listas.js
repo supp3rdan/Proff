@@ -1,13 +1,13 @@
 // Telas de listas e cadastros: nova aula, minhas aulas, turmas, bimestre,
 // banco de questões e comunidade.
 
-import { get, post, del } from '../api.js?v=mwvaocy';
-import { acompanharTarefa } from '../sessao.js?v=mwvaocy';
+import { get, post, del } from '../api.js?v=__VERSAO__';
+import { acompanharTarefa } from '../sessao.js?v=__VERSAO__';
 import {
   el, substituir, botao, aviso, confirmar, campo, seletor, NIVEIS, rotuloNivel, dataCurta,
   renderizarMatematica, carregando, mostrarErro,
-} from '../ui.js?v=mwvaocy';
-import { ASSUNTOS } from '../../assuntos.js?v=mwvaocy';
+} from '../ui.js?v=__VERSAO__';
+import { ASSUNTOS } from '../../assuntos.js?v=__VERSAO__';
 
 const SERIES = [['1', '1º ano'], ['2', '2º ano'], ['3', '3º ano']];
 const BIMESTRES = [['', '—'], ['1', '1º bimestre'], ['2', '2º bimestre'], ['3', '3º bimestre'], ['4', '4º bimestre']];

@@ -51,6 +51,15 @@
   }
   function matematica(raiz) {
     trocarTextos(raiz, /R\$/g, 'R' + MARCADOR);
+    if (typeof delimitarLatex === 'function') {
+      // fórmula escrita sem $...$ pela IA passa a ser desenhada também
+      const andador = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
+        acceptNode: (n) => (n.parentElement && n.parentElement.closest('script, style, textarea, input, .katex') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+      });
+      const nos = [];
+      while (andador.nextNode()) nos.push(andador.currentNode);
+      nos.forEach((no) => { const novo = delimitarLatex(no.nodeValue); if (novo !== no.nodeValue) no.nodeValue = novo; });
+    }
     if (window.renderMathInElement) {
       window.renderMathInElement(raiz, {
         delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }],

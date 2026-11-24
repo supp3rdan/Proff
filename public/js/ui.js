@@ -1,8 +1,8 @@
 // Utilidades de interface: criação de elementos, avisos, janelas e formatação.
 // Todo texto entra por textContent (nunca innerHTML).
 
-export { el, anexar, renderizarMatematica } from '../slides-render.js?v=mwvaocy';
-import { el, anexar } from '../slides-render.js?v=mwvaocy';
+export { el, anexar, renderizarMatematica } from '../slides-render.js?v=__VERSAO__';
+import { el, anexar } from '../slides-render.js?v=__VERSAO__';
 
 export const $ = (sel, raiz = document) => raiz.querySelector(sel);
 export const $$ = (sel, raiz = document) => [...raiz.querySelectorAll(sel)];

@@ -2,6 +2,8 @@
 // - fórmulas em destaque viram imagem PNG nítida desenhada pelo MathJax;
 // - fórmulas no meio do texto viram texto Unicode na fonte Cambria Math (continua editável).
 
+import { delimitarLatex } from './core/latex.js?v=__VERSAO__';
+
 const SOBRESCRITOS = { 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹', n: 'ⁿ', '-': '⁻', '+': '⁺' };
 const SIMBOLOS = {
   cdot: '·', times: '×', div: '÷', neq: '≠', leq: '≤', geq: '≥', le: '≤', ge: '≥', pm: '±',
@@ -43,7 +45,7 @@ const MARCADOR_REAL = '';
  * "Custa R$ 5 e $x^2$" → [{texto:'Custa R$ 5 e '}, {mat:'x^2'}]
  */
 export function segmentar(texto = '') {
-  const protegido = String(texto).replace(/R\$/g, `R${MARCADOR_REAL}`);
+  const protegido = delimitarLatex(String(texto)).replace(/R\$/g, `R${MARCADOR_REAL}`);
   const partes = protegido.split(/(\$\$[\s\S]+?\$\$|\$[^$]+?\$)/).filter((p) => p !== '');
   return partes.map((p) => {
     const volta = (s) => s.replaceAll(MARCADOR_REAL, '$');

@@ -1,8 +1,8 @@
 // Login do professor (Supabase Auth) e acompanhamento das tarefas em tempo real.
 // No modo de demonstração (DB_MEMORIA=1), o login é só um e-mail, sem senha.
 
-import { get, post, definirToken, quandoDeslogar } from './api.js?v=mwvaocy';
-import { el, $, substituir, campo, botao, aviso } from './ui.js?v=mwvaocy';
+import { get, post, definirToken, quandoDeslogar } from './api.js?v=__VERSAO__';
+import { el, $, substituir, campo, botao, aviso } from './ui.js?v=__VERSAO__';
 
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const CHAVE_DEMO = 'proff:sessao-demo';

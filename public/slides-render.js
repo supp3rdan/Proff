@@ -3,6 +3,7 @@
 // Todo texto entra via textContent (nunca innerHTML) para evitar HTML injetado.
 
 import { SECOES } from './core/estrutura.js?v=__VERSAO__';
+import { delimitarLatex } from './core/latex.js?v=__VERSAO__';
 
 const nomeDaSecao = (id) => SECOES.find((s) => s.id === id)?.titulo;
 
@@ -118,6 +119,16 @@ function trocarNosTextos(raiz, de, para) {
 export function renderizarMatematica(raiz) {
   if (!window.renderMathInElement) return;
   trocarNosTextos(raiz, /R\$/g, `R${MARCADOR}`);
+  // fórmula escrita sem $...$ pela IA passa a ser desenhada também
+  const andador = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.parentElement?.closest('script, style, textarea, input, .katex') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+  });
+  const textos = [];
+  while (andador.nextNode()) textos.push(andador.currentNode);
+  for (const no of textos) {
+    const novo = delimitarLatex(no.nodeValue);
+    if (novo !== no.nodeValue) no.nodeValue = novo;
+  }
   window.renderMathInElement(raiz, {
     delimiters: [
       { left: '$$', right: '$$', display: true },

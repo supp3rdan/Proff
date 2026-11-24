@@ -1,17 +1,17 @@
 // Tela de uma aula: plano, slides, avaliação, gabarito, aula interativa e resultados.
 // A geração roda no servidor em segundo plano; aqui só acompanhamos o progresso.
 
-import { get, post, patch, del } from '../api.js?v=mwvaocy';
-import { acompanharTarefa } from '../sessao.js?v=mwvaocy';
+import { get, post, patch, del } from '../api.js?v=__VERSAO__';
+import { acompanharTarefa } from '../sessao.js?v=__VERSAO__';
 import {
   el, $, substituir, botao, aviso, janela, confirmar, perguntar, campo, seletor, NIVEIS, rotuloNivel,
   renderizarMatematica, carregando, mostrarErro,
-} from '../ui.js?v=mwvaocy';
-import { montarSlide } from '../../slides-render.js?v=mwvaocy';
-import { exportarPptx } from '../../pptx.js?v=mwvaocy';
-import { SECOES } from '../../core/estrutura.js?v=mwvaocy';
-import { dadosDaPagina } from '../../core/interativa.js?v=mwvaocy';
-import { montarPaginaInterativa } from '../../interativa/montar.js?v=mwvaocy';
+} from '../ui.js?v=__VERSAO__';
+import { montarSlide } from '../../slides-render.js?v=__VERSAO__';
+import { exportarPptx } from '../../pptx.js?v=__VERSAO__';
+import { SECOES } from '../../core/estrutura.js?v=__VERSAO__';
+import { dadosDaPagina } from '../../core/interativa.js?v=__VERSAO__';
+import { montarPaginaInterativa } from '../../interativa/montar.js?v=__VERSAO__';
 
 const ABAS = [
   ['plano', 'Plano de aula'],

@@ -283,3 +283,13 @@ test('endereço do Supabase é limpo', async () => {
     assert.equal(urlSupabase(v), 'https://abc.supabase.co');
   assert.equal(urlSupabase(''), '');
 });
+
+test('fórmula em LaTeX sem $ ganha delimitadores', async () => {
+  const { delimitarLatex: d } = await import('../public/core/latex.js');
+  assert.equal(d('Identifique f_i = 50 e N = 200; aplique \\frac{f_i}{N} = \\frac{50}{200} = 0,25.'),
+    'Identifique $f_i = 50$ e N = 200; aplique $\\frac{f_i}{N} = \\frac{50}{200} = 0{,}25$.');
+  assert.equal(d('A área é $A = \\pi r^2$ e custa R$ 20,00.'), 'A área é $A = \\pi r^2$ e custa R$ 20,00.');
+  assert.equal(d('Texto sem fórmula, a e o.'), 'Texto sem fórmula, a e o.');
+  const { segmentar } = await import('../public/pptx-matematica.js');
+  assert.deepEqual(segmentar('Calcule \\sqrt{16}.'), [{ texto: 'Calcule ' }, { mat: '\\sqrt{16}' }, { texto: '.' }]);
+});
