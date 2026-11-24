@@ -2,7 +2,7 @@
 // No modo de demonstração (DB_MEMORIA=1), o login é só um e-mail, sem senha.
 
 import { get, post, definirToken, quandoDeslogar } from './api.js?v=__VERSAO__';
-import { el, $, substituir, campo, botao, aviso } from './ui.js?v=__VERSAO__';
+import { el, $, substituir, campo, botao, aviso, janela } from './ui.js?v=__VERSAO__';
 
 const SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const CHAVE_DEMO = 'proff:sessao-demo';
@@ -28,16 +28,29 @@ export async function iniciarSessao(aoMudar) {
   }
 
   const { createClient } = await import(SUPABASE_JS);
+  // link de "esqueci minha senha" chega com type=recovery no endereço
+  const veioDaRecuperacao = /type=recovery/.test(location.hash + location.search);
+  let senhaPedida = false;
+  const pedirSenha = () => {
+    if (senhaPedida) return;
+    senhaPedida = true;
+    setTimeout(() => abrirDefinirSenha('Criar nova senha'), 0);
+  };
   sessao.supabase = createClient(sessao.status.supabase.url, sessao.status.supabase.anonKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
-  const { data } = await sessao.supabase.auth.getSession();
-  aplicarSessao(data.session);
-  sessao.supabase.auth.onAuthStateChange((_evento, s) => {
+  let pronto = false;
+  sessao.supabase.auth.onAuthStateChange((evento, s) => {
+    // voltou pelo link de "esqueci minha senha": pede a nova senha
+    if (evento === 'PASSWORD_RECOVERY') pedirSenha();
     const antes = sessao.usuario?.id;
     aplicarSessao(s);
-    if (antes !== sessao.usuario?.id) aoMudar();
+    if (pronto && antes !== sessao.usuario?.id) aoMudar();
   });
+  const { data } = await sessao.supabase.auth.getSession();
+  aplicarSessao(data.session);
+  pronto = true;
+  if (veioDaRecuperacao && data.session) pedirSenha();
   return Boolean(sessao.usuario);
 }
 
@@ -51,6 +64,49 @@ export async function sair() {
   try { localStorage.removeItem(CHAVE_DEMO); } catch { /* sem armazenamento */ }
   definirToken(null);
   sessao.usuario = null;
+}
+
+/** Mensagens do Supabase Auth em português. */
+function traduzirErro(erro) {
+  const m = String(erro?.message || erro || '');
+  const tabela = [
+    [/invalid login credentials/i, 'E-mail ou senha incorretos. Se você sempre entrou pelo link, sua conta ainda não tem senha: use "Esqueci / criar senha".'],
+    [/email not confirmed/i, 'Seu e-mail ainda não foi confirmado. Abra o link que enviamos (veja também o spam) ou use "Entrar com link por e-mail".'],
+    [/user already registered|already been registered/i, 'Este e-mail já tem conta. Clique em "Entrar" ou, se não lembrar a senha, em "Esqueci / criar senha".'],
+    [/rate limit|too many requests|security purposes/i, 'Muitos e-mails enviados em pouco tempo. Aguarde alguns minutos e tente de novo.'],
+    [/password should be at least|weak password|password is too weak/i, 'Senha fraca: use pelo menos 6 caracteres, misturando letras e números.'],
+    [/signups not allowed|signup is disabled/i, 'O cadastro de novas contas está desativado no Supabase.'],
+    [/unable to validate email|invalid email|email address .* is invalid/i, 'E-mail inválido.'],
+    [/same password|different from the old/i, 'A nova senha precisa ser diferente da atual.'],
+  ];
+  const achado = tabela.find(([re]) => re.test(m));
+  return new Error(achado ? achado[1] : m || 'Não foi possível concluir. Tente de novo.');
+}
+
+/** Janela para criar ou trocar a senha da conta (também usada após "esqueci minha senha"). */
+export function abrirDefinirSenha(titulo = 'Definir senha') {
+  if (!sessao.supabase) return;
+  const nova = el('input', { type: 'password', autocomplete: 'new-password', minlength: 6, placeholder: 'mínimo 6 caracteres' });
+  const repetir = el('input', { type: 'password', autocomplete: 'new-password', minlength: 6 });
+  const msg = el('p', { classe: 'dica', texto: 'Depois disso você pode entrar com e-mail e senha, sem precisar do link.' });
+  const j = janela(titulo, [campo('Nova senha', nova), campo('Repita a senha', repetir), msg], {
+    acoes: [
+      botao('Cancelar', () => j.fechar()),
+      botao('Salvar senha', async () => {
+        try {
+          if (nova.value.length < 6) throw new Error('Use pelo menos 6 caracteres.');
+          if (nova.value !== repetir.value) throw new Error('As senhas não são iguais.');
+          const { error } = await sessao.supabase.auth.updateUser({ password: nova.value });
+          if (error) throw traduzirErro(error);
+          j.fechar();
+          aviso('Senha salva! Na próxima vez, entre com e-mail e senha.');
+        } catch (erro) {
+          msg.textContent = erro.message;
+          msg.className = 'erro';
+        }
+      }, 'botao botao-primario'),
+    ],
+  });
 }
 
 /** Tela de login. */
@@ -76,21 +132,32 @@ export function telaLogin(alvo, aoEntrar) {
       const redirectTo = `${location.origin}${location.pathname}`;
       if (modo === 'link') {
         const { error } = await auth.signInWithOtp({ email: email.value, options: { emailRedirectTo: redirectTo } });
-        if (error) throw error;
+        if (error) throw traduzirErro(error);
         mensagem.textContent = '📬 Enviamos um link de acesso para o seu e-mail.';
+        return;
+      }
+      if (modo === 'esqueci') {
+        const { error } = await auth.resetPasswordForEmail(email.value, { redirectTo });
+        if (error) throw traduzirErro(error);
+        mensagem.textContent = '📬 Enviamos um link para criar uma nova senha. Abra-o neste mesmo navegador (veja também o spam).';
         return;
       }
       if (!senha.value) throw new Error('Informe a senha (ou use "Entrar com link por e-mail").');
       if (modo === 'criar') {
+        if (senha.value.length < 6) throw new Error('A senha precisa ter pelo menos 6 caracteres.');
         const { data, error } = await auth.signUp({ email: email.value, password: senha.value, options: { emailRedirectTo: redirectTo } });
-        if (error) throw error;
+        if (error) throw traduzirErro(error);
+        // o Supabase não acusa erro quando o e-mail já existe: devolve um usuário sem identidades
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          throw new Error('Este e-mail já tem conta. Clique em "Entrar" ou, se ela foi criada pelo link e ainda não tem senha, em "Esqueci / criar senha".');
+        }
         if (!data.session) {
-          mensagem.textContent = '📬 Conta criada! Confirme pelo link enviado ao seu e-mail e depois entre.';
+          mensagem.textContent = '📬 Conta criada! Abra o link de confirmação que enviamos ao seu e-mail (veja também o spam) e depois clique em "Entrar".';
           return;
         }
       } else {
         const { error } = await auth.signInWithPassword({ email: email.value, password: senha.value });
-        if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error.message);
+        if (error) throw traduzirErro(error);
       }
       aoEntrar();
     } catch (erro) {
@@ -110,6 +177,7 @@ export function telaLogin(alvo, aoEntrar) {
       el('button', { type: 'submit', classe: 'botao botao-primario', texto: 'Entrar' }),
       demo ? null : botao('Criar conta', () => entrar('criar')),
       demo ? null : botao('Entrar com link por e-mail', () => entrar('link'), 'botao botao-link'),
+      demo ? null : botao('Esqueci / criar senha', () => entrar('esqueci'), 'botao botao-link'),
     ]),
     mensagem,
   ]);

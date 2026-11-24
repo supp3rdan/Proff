@@ -1,7 +1,7 @@
 // Proff: aplicativo do professor (versão com servidor na Vercel e banco no Supabase).
 // Navegação por rotas no endereço (#/aulas, #/aula/<id>, ...).
 
-import { iniciarSessao, telaLogin, sair, sessao, nomeUsuario } from './js/sessao.js?v=__VERSAO__';
+import { iniciarSessao, telaLogin, sair, sessao, nomeUsuario, abrirDefinirSenha } from './js/sessao.js?v=__VERSAO__';
 import { el, $, substituir, botao, aviso, mostrarErro } from './js/ui.js?v=__VERSAO__';
 import { telaAula } from './js/views/aula.js?v=__VERSAO__';
 import {
@@ -36,6 +36,7 @@ function desenharMenu() {
       el('a', { href, texto, classe: atual === href ? 'ativo' : '' }))),
     el('div', { classe: 'usuario' }, [
       el('span', { classe: 'meta', texto: nomeUsuario() }),
+      sessao.supabase ? botao('Senha', () => abrirDefinirSenha(), 'botao botao-pequeno') : null,
       botao('Sair', async () => { await sair(); history.replaceState(null, '', '#/aulas'); rotear(); }, 'botao botao-pequeno'),
     ])
   );

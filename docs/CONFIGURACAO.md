@@ -75,3 +75,10 @@ Se algo falhar, veja em **Vercel → Deployments → (deploy) → Logs** e me ma
 - Os segredos antigos do GitHub (`GROK_API_SECRET_TRUE`, `API_KEY_GROQ`, `GEMINI_API_KEY`) podem ser apagados.
 - O Supabase grátis envia poucos e-mails por hora. Com muitos professores se cadastrando, configure um SMTP próprio em **Authentication → Emails → SMTP Settings**.
 - Projetos grátis do Supabase podem ser pausados após um período sem uso; basta reativar no painel.
+
+## Login com e-mail e senha
+
+- Por padrão o Supabase pede **confirmação por e-mail** ao criar conta, e o servidor de e-mail gratuito dele envia poucos e-mails por hora.
+  Para o professor entrar logo após criar a conta: **Authentication → Sign In / Providers → Email → desligue "Confirm email" → Save**.
+  (Alternativa: manter a confirmação e configurar um SMTP próprio em **Authentication → Emails → SMTP Settings**.)
+- Conta criada pelo **link por e-mail** não tem senha. Para criar uma: na tela de login, **Esqueci / criar senha**; ou, já logado, botão **Senha** no topo.
