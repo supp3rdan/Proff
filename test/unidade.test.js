@@ -276,3 +276,10 @@ test('versões A/B: gabarito acompanha as alternativas embaralhadas', async () =
   }
   assert.deepEqual(criarVersoes(prova, 'semente').B, v.B); // mesma semente, mesmas versões
 });
+
+test('endereço do Supabase é limpo', async () => {
+  const { urlSupabase } = await import('../lib/db.js');
+  for (const v of ['https://abc.supabase.co', ' https://abc.supabase.co/ ', 'https://abc.supabase.co/rest/v1/', 'abc.supabase.co', '"https://abc.supabase.co/auth/v1"', 'https://supabase.com/dashboard/project/abc/settings/api'])
+    assert.equal(urlSupabase(v), 'https://abc.supabase.co');
+  assert.equal(urlSupabase(''), '');
+});

@@ -96,7 +96,7 @@ rota('GET', 'status', async () => ({
   proff: true,
   modo: 'servidor',
   autenticacao: db.usarMemoria() ? 'demo' : 'supabase',
-  supabase: db.usarMemoria() ? null : { url: process.env.SUPABASE_URL, anonKey: process.env.SUPABASE_ANON_KEY },
+  supabase: db.usarMemoria() ? null : { url: db.urlSupabase(), anonKey: db.chaveAmbiente('SUPABASE_ANON_KEY') },
   provedores: provedoresConfigurados(),
   limiteDiario: Number(process.env.LIMITE_DIARIO || 400),
 }));
