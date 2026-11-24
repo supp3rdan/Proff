@@ -3,6 +3,8 @@
 Gerador de **plano de aula**, **slides**, **avaliação com gabarito** e **aula interativa** de Matemática para o Ensino Médio.
 O professor escolhe a série e o assunto (e, se quiser, como prefere a aula); o Proff faz o resto com APIs **gratuitas** de IA.
 
+🌐 **Acesse: [proff-math.vercel.app](https://proff-math.vercel.app/)** (crie sua conta com e-mail e senha).
+
 Hospedagem: **Vercel** (site + servidor) e **Supabase** (banco de dados + login).
 Passo a passo de configuração: **[docs/CONFIGURACAO.md](docs/CONFIGURACAO.md)**.
 
