@@ -31,13 +31,12 @@
         <li>Com a chave do Groq, o Proff usa o <strong>Llama 3.3</strong> para escrever a aula e os slides e o <strong>gpt-oss</strong> para as contas, as questões e o gabarito.</li>
         <li>Com duas ou mais, o Proff troca de provedor sozinho quando um atinge o limite, e confere o gabarito com um modelo diferente.</li>
         <li>Nenhuma delas pede cartão de crédito.</li>
-        <li>Se você não colar nenhuma chave, o Proff usa as <strong>chaves padrão</strong> do projeto (quando houver). Elas são compartilhadas por todos os professores, então podem atingir o limite do dia.</li>
       </ul>
       <nav class="indice">
         <a class="botao" href="#gemini">1. Google Gemini</a>
         <a class="botao" href="#groq">2. Groq</a>
         <a class="botao" href="#openrouter">3. OpenRouter</a>
-        <a class="botao" href="#usar">Colar no Proff</a>
+        <a class="botao" href="#usar">Onde colocar</a>
       </nav>
     </section>
 
@@ -80,43 +79,19 @@
     </section>
 
     <section class="cartao" id="usar">
-      <h2>Colar a chave no Proff</h2>
-      <ol class="passos">
-        <li>Abra o <a href="./">Proff</a>.</li>
-        <li>Clique em <strong>Chaves de API</strong>, logo abaixo do campo de observações.</li>
-        <li>Cole cada chave no campo do provedor correspondente. Ela é salva na hora.</li>
-        <li>Para voltar às chaves padrão do projeto, apague os campos ou clique em <strong>Voltar às chaves padrão</strong>.</li>
-      </ol>
-      <p class="dica">
-        A chave fica salva só no navegador em que você colou e vai direto para o provedor de IA, sem passar por nenhum servidor do Proff.
-        Em computadores compartilhados (como os da escola), apague a chave ao terminar.
-      </p>
-    </section>
-
-    <section class="cartao" id="dono">
-      <h2>Para quem mantém o Proff: chaves padrão</h2>
+      <h2>Onde colocar as chaves</h2>
       <p>
-        As chaves padrão <strong>não ficam no código</strong>, porque o repositório e o site são públicos.
-        Elas ficam guardadas como segredos no GitHub e são escritas no arquivo <code>config.js</code> só na hora da publicação.
+        Nesta versão, as chaves ficam <strong>só no servidor</strong>: nenhum professor precisa ter chave e ninguém
+        consegue vê-las pelo site. Quem mantém o Proff cadastra uma vez na Vercel:
       </p>
       <ol class="passos">
-        <li>No repositório, abra <a href="https://github.com/supp3rdan/Proff/settings/secrets/actions" target="_blank" rel="noopener">Settings → Secrets and variables → Actions</a>.</li>
-        <li>Clique em <strong>New repository secret</strong> e crie um segredo para cada chave que tiver:
-          <code>GEMINI_API_KEY</code>, <code>GROQ_API_KEY</code> e <code>OPENROUTER_API_KEY</code>.</li>
-        <li>Em <a href="https://github.com/supp3rdan/Proff/actions/workflows/pages.yml" target="_blank" rel="noopener">Actions → Publicar no GitHub Pages</a>, clique em <strong>Run workflow</strong> para publicar de novo com as chaves.</li>
-      </ol>
-      <p class="aviso aviso-atencao">
-        Quem abrir o site consegue ver as chaves padrão no arquivo <code>config.js</code>. Como não há cartão cadastrado, não existe cobrança,
-        mas outra pessoa pode gastar a cota grátis. Para proteger a chave do Gemini, restrinja-a ao endereço do site:
-      </p>
-      <ol class="passos">
-        <li>Abra o <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud → Credenciais</a> com a mesma conta e o mesmo projeto da chave.</li>
-        <li>Clique na chave e, em <strong>Restrições de aplicativos</strong>, escolha <strong>Sites</strong>.</li>
-        <li>Adicione <code>https://supp3rdan.github.io/*</code> e salve. A chave passa a funcionar só no Proff publicado.</li>
+        <li>Abra o projeto na <a href="https://vercel.com/dashboard" target="_blank" rel="noopener">Vercel</a> → <strong>Settings → Environment Variables</strong>.</li>
+        <li>Crie <code>GROQ_API_KEY</code> (recomendado), <code>GEMINI_API_KEY</code> e <code>OPENROUTER_API_KEY</code> com as chaves que tiver.</li>
+        <li>Faça um novo deploy (<strong>Deployments → ⋯ → Redeploy</strong>) para as chaves passarem a valer.</li>
       </ol>
       <p class="dica">
-        Groq e OpenRouter não têm esse tipo de restrição. No OpenRouter, um limite de crédito 0 na chave garante que ela nunca gere cobrança.
-        Se perceber uso estranho, apague a chave no site do provedor e crie outra.
+        Basta uma chave. Com mais de uma, o Proff troca sozinho de provedor quando um falha e usa outro modelo para conferir o gabarito.
+        O limite de uso por professor é definido em <code>LIMITE_DIARIO</code> (padrão: 400 pedidos por dia).
       </p>
     </section>
   </main>

@@ -21,7 +21,8 @@ test('extrairJSON aceita bloco ```json', () => {
 });
 
 test('validarEntrada', () => {
-  assert.deepEqual(validarEntrada({ serie: 2, assunto: ' Matrizes ' }), { serie: '2', assunto: 'Matrizes', observacoes: '' });
+  assert.deepEqual(validarEntrada({ serie: 2, assunto: ' Matrizes ' }), { serie: '2', assunto: 'Matrizes', observacoes: '', nivel: 'regular' });
+  assert.throws(() => validarEntrada({ serie: '1', assunto: 'x', nivel: 'hacker' }), ErroEntrada);
   assert.throws(() => validarEntrada({ serie: '4', assunto: 'x' }), ErroEntrada);
   assert.throws(() => validarEntrada({ serie: '1', assunto: '' }), ErroEntrada);
 });
@@ -243,4 +244,35 @@ test('validação de visualizações e jogos descarta o que não serve', async (
   assert.equal(j.verdadeiro_falso.length, 1);
   assert.equal(j.pares.length, 0); // menos de 3 pares não vira jogo
   assert.deepEqual(j.desafios.map((d) => d.resposta), [12.5]);
+});
+
+test('lista da BNCC no código é a mesma do SQL', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { BNCC_PADRAO } = await import('../lib/bncc.js');
+  const sql = readFileSync(new URL('../supabase/migrations/20261124000000_proff.sql', import.meta.url), 'utf8');
+  const doSql = [...sql.matchAll(/\('(EM13MAT\d{3})', (\d), '([^']*)'\)/g)].map((m) => ({ codigo: m[1], competencia: Number(m[2]), resumo: m[3] }));
+  assert.equal(doSql.length, 43);
+  assert.deepEqual(BNCC_PADRAO, doSql);
+});
+
+test('BNCC: só códigos da lista oficial ficam no plano', async () => {
+  const { conferirBncc } = await import('../public/core/gerador.js');
+  const lista = [{ codigo: 'EM13MAT302', resumo: 'Funções de 1º e 2º graus' }];
+  assert.deepEqual(conferirBncc([{ codigo: 'em13mat302' }, { codigo: 'EM13MAT999' }, { codigo: 'EM13MAT302' }], lista), [{ codigo: 'EM13MAT302', descricao: 'Funções de 1º e 2º graus' }]);
+});
+
+test('versões A/B: gabarito acompanha as alternativas embaralhadas', async () => {
+  const { criarVersoes } = await import('../public/core/versoes.js');
+  const prova = { questoes: [
+    { numero: 1, tipo: 'multipla', alternativas: ['1', '2', '3', '4', '5'], resposta: 'C' },
+    { numero: 2, tipo: 'discursiva', alternativas: [], resposta: 'x = 2' },
+    { numero: 3, tipo: 'multipla', alternativas: ['a', 'b', 'c', 'd', 'e'], resposta: 'A' },
+  ] };
+  const v = criarVersoes(prova, 'semente');
+  assert.deepEqual(v.A.map((q) => q.resposta), ['C', 'x = 2', 'A']);
+  for (const q of v.B.filter((x) => x.tipo === 'multipla')) {
+    const original = prova.questoes.find((x) => x.numero === q.original);
+    assert.equal(q.alternativas['ABCDE'.indexOf(q.resposta)], original.alternativas['ABCDE'.indexOf(original.resposta)]);
+  }
+  assert.deepEqual(criarVersoes(prova, 'semente').B, v.B); // mesma semente, mesmas versões
 });

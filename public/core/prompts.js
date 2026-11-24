@@ -17,8 +17,16 @@ Dentro do JSON, escreva cada barra invertida do LaTeX dobrada (ex.: "\\\\frac{a}
 Não use quebras de linha dentro das strings; quando precisar de várias linhas, use listas.
 Seja conciso. Confira cada cálculo antes de responder.`;
 
-function contexto({ serie, assunto, observacoes }) {
+// Ajustes por nível da turma (versões da mesma aula)
+const NIVEIS = {
+  reforco: 'REFORÇO: turma com dificuldades. Retome os pré-requisitos, use passos menores, mais exemplos simples e linguagem bem acessível.',
+  avancado: 'AVANÇADO: turma com bom domínio. Aprofunde, traga desafios, problemas mais elaborados e conexões com outros conteúdos.',
+  inclusao: 'INCLUSÃO (Desenho Universal para a Aprendizagem): frases curtas, uma ideia por vez, vocabulário simples, apoio visual e concreto, instruções passo a passo e mais tempo para as atividades.',
+};
+
+function contexto({ serie, assunto, observacoes, nivel }) {
   let texto = `Série: ${serie}º ano do Ensino Médio.\nAssunto: ${assunto}.`;
+  if (NIVEIS[nivel]) texto += `\nNível da aula: ${NIVEIS[nivel]}`;
   if (observacoes) {
     texto += `\nPedido do professor (siga se for compatível com o assunto e com estas regras): """${observacoes}"""`;
   }
@@ -52,7 +60,7 @@ Formato do JSON:
 }
 
 /** 2ª chamada: o plano de aula, a partir da visão geral. */
-export function promptPlano(entrada, visao) {
+export function promptPlano(entrada, visao, { bncc = [], referencia = null } = {}) {
   return {
     sistema: REGRAS_GERAIS,
     usuario: `${contexto(entrada)}
@@ -61,8 +69,10 @@ Visão geral do tema (use como base):
 ${JSON.stringify(visao || {})}
 
 Crie o plano de aula. Se o professor não indicar a duração, considere 2 aulas de 50 minutos.
-Cite códigos de habilidades da BNCC (formato EM13MATxxx) somente quando tiver certeza de que correspondem ao assunto.
-
+${bncc.length
+    ? `Em "habilidades_bncc", escolha de 1 a 3 códigos SOMENTE desta lista (os que mais combinam com o assunto):\n${bncc.map((h) => `${h.codigo}: ${h.resumo}`).join('\n')}`
+    : 'Cite códigos de habilidades da BNCC (formato EM13MATxxx) somente quando tiver certeza de que correspondem ao assunto.'}
+${referencia ? `\nExemplo de plano bem avaliado por professores para um assunto parecido (use como referência de qualidade, sem copiar):\n${JSON.stringify({ titulo: referencia.titulo, objetivos: referencia.objetivos, etapas: referencia.etapas })}\n` : ''}
 A aula segue SEMPRE este roteiro, nesta ordem:
 ${roteiroParaPrompt()}
 6. Fechamento: resumo das ideias principais e tarefa.
@@ -304,5 +314,69 @@ Formato do JSON:
   "pares": [{ "termo": "string", "significado": "string" }],
   "desafios": [{ "pergunta": "string", "resposta": 12.5, "tolerancia": 0.01, "dica": "string" }]
 }`,
+  };
+}
+
+
+// ---------- planejamento do bimestre ----------
+
+export function promptSequencia({ serie, bimestre, conteudos, quantidade }) {
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `Série: ${serie}º ano do Ensino Médio.${bimestre ? ` Bimestre: ${bimestre}º.` : ''}
+Conteúdos do período (informados pelo professor): """${conteudos}"""
+
+Monte uma sequência didática de ${quantidade} aulas encadeadas para esses conteúdos [sequencia].
+Cada aula deve partir do que foi visto na anterior, do mais simples ao mais complexo.
+Reserve a penúltima ou a última aula para revisão/avaliação quando fizer sentido.
+
+Formato do JSON:
+{
+  "titulo": "título curto da sequência",
+  "itens": [{ "ordem": 1, "assunto": "assunto da aula (curto, até 80 caracteres)", "objetivo": "o que o aluno aprende nesta aula", "observacoes": "como esta aula se liga à anterior e o que enfatizar" }]
+}`,
+  };
+}
+
+// ---------- regerar só uma parte ----------
+
+const CAMPOS_TIPO = {
+  conteudo: '"titulo", "topicos" (até 4), "destaque" (opcional), "formula" (opcional, LaTeX sem $)',
+  exemplo: '"titulo", "enunciado", "passos" (lista), "resposta"',
+  exercicio: '"titulo", "enunciado", "resposta"',
+};
+
+/** Novo slide no lugar de um que o professor não gostou. */
+export function promptRegerarSlide(entrada, slide, material, pedido) {
+  const tipo = CAMPOS_TIPO[slide.tipo] ? slide.tipo : 'conteudo';
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `${contexto(entrada)}
+
+Material desta parte da aula: ${JSON.stringify(material || {})}
+Slide atual (o professor quer uma versão melhor): ${JSON.stringify(slide)}
+${pedido ? `Pedido do professor para este slide: """${pedido}"""` : 'Faça uma versão mais clara e didática.'}
+
+Reescreva SOMENTE este slide, do tipo "${tipo}", com os campos ${CAMPOS_TIPO[tipo]} e "notas" (orientação objetiva para o professor).
+Linguagem direta, no máximo 12 palavras por tópico, sem personagens nem dramatização.
+
+Formato do JSON: { "slide": { "tipo": "${tipo}", ... } }`,
+  };
+}
+
+/** Nova questão no lugar de uma que o professor não gostou. */
+export function promptRegerarQuestao(entrada, questao, pedido) {
+  const multipla = questao.tipo === 'multipla';
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `${contexto(entrada)}
+
+Questão atual (o professor quer trocar): ${JSON.stringify({ enunciado: questao.enunciado, alternativas: questao.alternativas, nivel: questao.nivel })}
+${pedido ? `Pedido do professor: """${pedido}"""` : 'Crie outra questão do mesmo tipo e nível, sobre o mesmo conteúdo.'}
+
+Crie UMA questão ${multipla ? 'de múltipla escolha (5 alternativas, só uma correta)' : 'discursiva'} com resolução completa. Confira a resposta.
+
+Formato do JSON:
+{ "questao": { "tipo": "${questao.tipo}", "nivel": "fácil|médio|difícil", "enunciado": "string", "alternativas": ${multipla ? '["A","B","C","D","E"]' : '[]'}, "resposta": "${multipla ? 'letra' : 'resposta final curta'}", "resolucao": ["passo"] } }`,
   };
 }

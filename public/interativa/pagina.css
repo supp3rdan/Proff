@@ -139,7 +139,8 @@ a { color: var(--azul-medio); }
 .desafio { border-bottom: 1px dashed var(--borda); padding: 12px 0; }
 .desafio:last-child { border-bottom: none; }
 .desafio form { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-.desafio input { font: inherit; padding: 8px 12px; border: 2px solid var(--borda); border-radius: 10px; width: 140px; }
+.envio-resultado form { display: flex; gap: 8px; flex-wrap: wrap; }
+.envio-resultado input, .desafio input { font: inherit; padding: 8px 12px; border: 2px solid var(--borda); border-radius: 10px; width: 140px; }
 .festa { position: fixed; inset: 0; pointer-events: none; z-index: 30; overflow: hidden; }
 .festa span { position: absolute; top: -40px; font-size: 1.8rem; animation: cair 2.4s linear forwards; }
 @keyframes cair { to { transform: translateY(110vh) rotate(360deg); } }

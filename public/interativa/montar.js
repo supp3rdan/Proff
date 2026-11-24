@@ -4,7 +4,7 @@
 
 const KATEX = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist';
 
-async function lerArquivo(caminho) {
+async function lerArquivoPadrao(caminho) {
   const r = await fetch(new URL(`${caminho}?v=__VERSAO__`, import.meta.url));
   if (!r.ok) throw new Error(`não foi possível carregar ${caminho}`);
   return r.text();
@@ -20,7 +20,12 @@ function jsonSeguro(dados) {
     .replace(/\u2029/g, '\\u2029');
 }
 
-export async function montarPaginaInterativa(dados) {
+/**
+ * @param {object} dados  resultado de dadosDaPagina()
+ * @param {object} [opcoes]
+ * @param {(caminho: string) => Promise<string>} [opcoes.lerArquivo]  no servidor, lê do disco
+ */
+export async function montarPaginaInterativa(dados, { lerArquivo = lerArquivoPadrao } = {}) {
   const [css, runtime, expressao] = await Promise.all([
     lerArquivo('./pagina.css'),
     lerArquivo('./runtime.js'),

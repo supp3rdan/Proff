@@ -198,6 +198,20 @@ export function respostaSimulada(tarefa, usuario) {
     }
     case 'visualizacoes':
       return VISUALIZACOES;
+    case 'sequencia':
+      return JSON.stringify({
+        titulo: 'Funções no 1º bimestre',
+        itens: [
+          { ordem: 1, assunto: 'Conceito de função', objetivo: 'Reconhecer relações de dependência entre grandezas', observacoes: 'Partir de tabelas do cotidiano.' },
+          { ordem: 2, assunto: 'Função afim', objetivo: 'Identificar valor inicial e taxa de variação', observacoes: 'Retomar as tabelas da aula 1.' },
+          { ordem: 3, assunto: 'Gráfico da função afim', objetivo: 'Construir e interpretar o gráfico', observacoes: 'Usar os exemplos da aula 2.' },
+          { ordem: 4, assunto: 'Revisão e avaliação', objetivo: 'Consolidar o conteúdo', observacoes: 'Exercícios mistos.' },
+        ],
+      });
+    case 'regerar-slide':
+      return String.raw`{ "slide": { "tipo": "conteudo", "titulo": "Lei de formação (nova versão)", "topicos": ["$a$: quanto cresce a cada unidade", "$b$: onde a reta começa"], "formula": "f(x) = ax + b", "notas": "Peça um exemplo à turma." } }`;
+    case 'regerar-questao':
+      return String.raw`{ "questao": { "tipo": "multipla", "nivel": "fácil", "enunciado": "Se $f(x) = 4x - 1$, quanto vale $f(2)$?", "alternativas": ["5", "7", "8", "9", "3"], "resposta": "B", "resolucao": ["$f(2) = 4 \cdot 2 - 1 = 7$"] } }`;
     case 'jogos':
       return JOGOS;
     case 'comparar': {

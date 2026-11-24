@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/build.js",
+  "outputDirectory": "public",
+  "functions": {
+    "api/r.js": {
+      "maxDuration": 300,
+      "includeFiles": "{public/core/**,public/interativa/**,lib/**}"
+    },
+    "api/sympy_comparar.py": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/v1/:rota*", "destination": "/api/r?rota=:rota*" },
+    { "source": "/a/:slug", "destination": "/api/r?rota=publica/:slug" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    }
+  ]
+}

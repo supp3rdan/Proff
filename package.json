@@ -1,15 +1,20 @@
 {
   "name": "proff",
   "version": "1.0.0",
-  "description": "Gerador de plano de aula, slides e prova de Matemática para o Ensino Médio usando APIs gratuitas de IA.",
+  "description": "Gerador de plano de aula, slides, avaliação e aula interativa de Matemática (Vercel + Supabase).",
   "type": "module",
   "private": true,
   "scripts": {
     "dev": "node server.js",
-    "demo": "LLM_MOCK=1 node server.js",
-    "test": "node --test"
+    "demo": "LLM_MOCK=1 DB_MEMORIA=1 node server.js",
+    "test": "node --test && python3 -m unittest discover -s test -p 'test_*.py'",
+    "build": "node scripts/build.js"
   },
   "engines": {
-    "node": ">=18.17"
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
+    "@vercel/functions": "^2.2.13"
   }
 }

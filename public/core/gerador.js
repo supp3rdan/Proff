@@ -11,6 +11,9 @@ import {
   promptArtigo,
   promptVisualizacoes,
   promptJogos,
+  promptSequencia,
+  promptRegerarSlide,
+  promptRegerarQuestao,
 } from './prompts.js?v=__VERSAO__';
 import { validarArtigoSecao, validarVisualizacoes, validarJogos } from './interativa.js?v=__VERSAO__';
 import { SECOES, normalizarSlidesDaSecao } from './estrutura.js?v=__VERSAO__';
@@ -28,14 +31,19 @@ export function validarEntrada(corpo) {
   const serie = String(corpo?.serie ?? '').trim();
   const assunto = String(corpo?.assunto ?? '').trim();
   const observacoes = String(corpo?.observacoes ?? '').trim();
+  const nivel = String(corpo?.nivel || 'regular');
 
   if (!['1', '2', '3'].includes(serie)) throw new ErroEntrada('Escolha a série (1º, 2º ou 3º ano).');
   if (!assunto) throw new ErroEntrada('Informe o assunto.');
   if (assunto.length > 150) throw new ErroEntrada('O assunto deve ter no máximo 150 caracteres.');
   if (observacoes.length > 1500) throw new ErroEntrada('As observações devem ter no máximo 1500 caracteres.');
 
-  return { serie, assunto, observacoes };
+  if (!NIVEIS_VALIDOS.includes(nivel)) throw new ErroEntrada('Nível inválido.');
+
+  return { serie, assunto, observacoes, nivel };
 }
+
+export const NIVEIS_VALIDOS = ['regular', 'reforco', 'avancado', 'inclusao'];
 
 // ---------- plano: visão geral → plano ----------
 
@@ -44,10 +52,27 @@ export async function gerarVisaoGeral(llm, entrada) {
   return { visao: dados, provedor };
 }
 
-export async function gerarPlano(llm, entrada, visao) {
-  const { dados, provedor } = await llm.gerarJSON({ ...promptPlano(entrada, visao), tarefa: 'plano', perfil: 'texto' });
+/**
+ * @param {object} [extras]
+ * @param {Array<{codigo, resumo}>} [extras.bncc]  lista oficial: a IA escolhe dela e o código confere
+ * @param {object} [extras.referencia]  plano bem avaliado de assunto parecido (exemplo de qualidade)
+ */
+export async function gerarPlano(llm, entrada, visao, extras = {}) {
+  const { dados, provedor } = await llm.gerarJSON({ ...promptPlano(entrada, visao, extras), tarefa: 'plano', perfil: 'texto' });
   if (!Array.isArray(dados.etapas)) throw new Error('Plano gerado sem etapas.');
+  if (extras.bncc?.length) dados.habilidades_bncc = conferirBncc(dados.habilidades_bncc, extras.bncc);
   return { plano: dados, provedor };
+}
+
+/** Mantém só códigos que existem na lista oficial, com a descrição da lista. */
+export function conferirBncc(habilidades, lista) {
+  const porCodigo = new Map(lista.map((h) => [h.codigo, h]));
+  const vistos = new Set();
+  return (Array.isArray(habilidades) ? habilidades : [])
+    .map((h) => String(h?.codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, ''))
+    .filter((c) => porCodigo.has(c) && !vistos.has(c) && vistos.add(c))
+    .slice(0, 3)
+    .map((c) => ({ codigo: c, descricao: porCodigo.get(c).resumo }));
 }
 
 // ---------- slides: para cada parte, material → formatação ----------
@@ -109,10 +134,15 @@ export function montarProva(questoes, plano, entrada) {
  * Confere o gabarito: outro pedido (de preferência em outro provedor) resolve
  * as questões sem ver as respostas. Devolve as questões com o resultado.
  */
-export async function conferirProva(llm, questoes) {
+/**
+ * @param {object} [opcoes]
+ * @param {(pares: Array<{a: string, b: string}>) => Promise<Array<boolean|null>>} [opcoes.compararSimbolico]
+ *        comparação exata (SymPy no servidor); null = não soube, aí a IA compara
+ */
+export async function conferirProva(llm, questoes, opcoes = {}) {
   const copia = structuredClone(questoes);
   try {
-    const verificacao = await verificarGabarito(llm, copia);
+    const verificacao = await verificarGabarito(llm, copia, opcoes);
     return { questoes: copia, verificacao };
   } catch (erro) {
     console.warn('[prova] verificação não concluída:', erro.message);
@@ -129,7 +159,7 @@ export async function gerarProva(llm, entrada, plano, visao) {
   return { prova: { ...prova, questoes }, verificacao, provedor: objetivas.provedor };
 }
 
-async function verificarGabarito(llm, questoes) {
+async function verificarGabarito(llm, questoes, { compararSimbolico } = {}) {
   const { dados, provedor } = await llm.gerarJSON({
     ...promptResolver(questoes),
     tarefa: 'resolver',
@@ -154,9 +184,27 @@ async function verificarGabarito(llm, questoes) {
     }
   }
 
-  if (discursivas.length) {
+  // 1º: comparação exata (SymPy), quando disponível
+  let metodo = 'ia';
+  if (discursivas.length && compararSimbolico) {
+    try {
+      const veredictos = await compararSimbolico(discursivas.map((d) => ({ a: d.resposta_a, b: d.resposta_b })));
+      discursivas.forEach((d, i) => {
+        if (typeof veredictos?.[i] === 'boolean') {
+          questoes.find((x) => x.numero === d.numero).verificacao.confere = veredictos[i];
+          d.resolvida = true;
+        }
+      });
+      if (discursivas.some((d) => d.resolvida)) metodo = 'sympy+ia';
+    } catch (erro) {
+      console.warn('[prova] comparação simbólica indisponível:', erro.message);
+    }
+  }
+  const pendentes = discursivas.filter((d) => !d.resolvida).map(({ resolvida, ...d }) => d);
+
+  if (pendentes.length) {
     const { dados: comp } = await llm.gerarJSON({
-      ...promptComparar(discursivas),
+      ...promptComparar(pendentes),
       tarefa: 'comparar',
       perfil: 'matematica',
       temperatura: 0,
@@ -168,7 +216,7 @@ async function verificarGabarito(llm, questoes) {
   }
 
   const revisar = questoes.filter((q) => q.verificacao.confere !== true).map((q) => q.numero);
-  return { concluida: true, provedor, revisar };
+  return { concluida: true, provedor, revisar, metodo };
 }
 
 function letra(texto) {
@@ -222,4 +270,63 @@ export async function gerarJogos(llm, entrada, plano, visao) {
   const jogos = validarJogos(dados);
   if (!jogos.quiz.length && !jogos.verdadeiro_falso.length && !jogos.desafios.length) throw new Error('Nenhuma atividade gerada.');
   return { jogos, provedor };
+}
+
+// ---------- bimestre ----------
+
+export async function gerarSequencia(llm, { serie, bimestre, conteudos, quantidade }) {
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptSequencia({ serie, bimestre, conteudos, quantidade }),
+    tarefa: 'sequencia',
+    temperatura: 0.4,
+    perfil: 'texto',
+  });
+  const texto = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
+  const itens = (Array.isArray(dados.itens) ? dados.itens : [])
+    .map((i) => ({ assunto: texto(i?.assunto, 150), objetivo: texto(i?.objetivo, 300), observacoes: texto(i?.observacoes, 600) }))
+    .filter((i) => i.assunto)
+    .slice(0, 20)
+    .map((i, k) => ({ ordem: k + 1, ...i, aula_id: null }));
+  if (!itens.length) throw new Error('A sequência veio vazia.');
+  return { titulo: texto(dados.titulo, 120) || 'Sequência didática', itens, provedor };
+}
+
+// ---------- regerar só uma parte ----------
+
+export async function regerarSlide(llm, entrada, slide, material, pedido) {
+  if (!['conteudo', 'exemplo', 'exercicio'].includes(slide?.tipo)) throw new ErroEntrada('Este slide não pode ser regerado.');
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptRegerarSlide(entrada, slide, material, pedido),
+    tarefa: 'regerar-slide',
+    temperatura: 0.7,
+    perfil: slide.tipo === 'conteudo' ? 'texto' : 'matematica',
+  });
+  const [novo] = normalizarSlidesDaSecao(slide.secao, [{ ...dados.slide, tipo: slide.tipo }]);
+  if (!novo) throw new Error('A IA não devolveu um slide válido.');
+  return { slide: novo, provedor };
+}
+
+export async function regerarQuestao(llm, entrada, questao, pedido) {
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptRegerarQuestao(entrada, questao, pedido),
+    tarefa: 'regerar-questao',
+    temperatura: 0.7,
+    perfil: 'matematica',
+  });
+  const q = dados.questao;
+  if (!q?.enunciado) throw new Error('A IA não devolveu uma questão válida.');
+  const alternativas = Array.isArray(q.alternativas) ? q.alternativas.map(String).slice(0, 5) : [];
+  if (questao.tipo === 'multipla' && alternativas.length < 2) throw new Error('Questão sem alternativas.');
+  return {
+    questao: {
+      ...questao,
+      enunciado: String(q.enunciado),
+      nivel: q.nivel || questao.nivel,
+      alternativas: questao.tipo === 'multipla' ? alternativas : [],
+      resposta: String(q.resposta ?? ''),
+      resolucao: Array.isArray(q.resolucao) ? q.resolucao.map(String) : [],
+      verificacao: undefined,
+    },
+    provedor,
+  };
 }

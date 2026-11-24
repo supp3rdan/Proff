@@ -149,8 +149,17 @@ export function erroHTTP(status, corpo, modelo) {
  * @param {boolean} [config.simulado]  responde com a aula de exemplo, sem chamar API
  * @param {number}  [config.timeoutMs]
  */
-export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, timeoutMs = 120000 } = {}) {
-  const ativos = ORDEM_DE_USO.map((n) => PROVEDORES.find((p) => p.nome === n)).filter((p) => chaves[p.nome]);
+export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, timeoutMs = 120000, ordem = null, aoChamar = null } = {}) {
+  // ordem: nomes dos provedores na ordem de preferência (o servidor usa a saúde recente de cada um)
+  // aoChamar: recebe {provedor, modelo, tarefa, ok, ms, erro} de cada tentativa (monitor no servidor)
+  const ordemUso = [...new Set([...(ordem || []), ...ORDEM_DE_USO])].filter((n) => ORDEM_DE_USO.includes(n));
+  const ativos = ordemUso.map((n) => PROVEDORES.find((p) => p.nome === n)).filter((p) => chaves[p.nome]);
+  const registrar = (evento) => {
+    if (!aoChamar) return;
+    try {
+      Promise.resolve(aoChamar(evento)).catch(() => {});
+    } catch { /* o registro nunca derruba a geração */ }
+  };
 
   /**
    * Envia um pedido e devolve o JSON já interpretado.
@@ -177,7 +186,7 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
 
     for (const provedor of ordem) {
       try {
-        const { texto, modelo } = await chamar(provedor, sistema, usuario, temperatura, perfil);
+        const { texto, modelo } = await chamar(provedor, sistema, usuario, temperatura, perfil, tarefa);
         return { dados: extrairJSON(texto), provedor: `${provedor.nome} · ${nomeCurto(modelo)}` };
       } catch (erro) {
         const motivo = erro.name === 'TypeError' ? 'falha de rede (internet ou bloqueio do navegador)' : erro.message;
@@ -189,17 +198,20 @@ export function criarClienteLLM({ chaves = {}, modelos = {}, simulado = false, t
   }
 
   /** Tenta os modelos do provedor em ordem; lembra qual funcionou. */
-  async function chamar(provedor, sistema, usuario, temperatura, perfil) {
+  async function chamar(provedor, sistema, usuario, temperatura, perfil, tarefa) {
     const candidatos = listaDeModelos(provedor, perfil);
     const esperou = new Set();
     let ultimoErro;
     for (let i = 0; i < candidatos.length; i++) {
       const modelo = candidatos[i];
+      const inicio = Date.now();
       try {
         const texto = await chamarModelo(provedor, modelo, sistema, usuario, temperatura, perfil);
         MODELO_QUE_FUNCIONOU.set(`${provedor.nome}:${perfil}`, modelo);
+        registrar({ provedor: provedor.nome, modelo, tarefa, ok: true, ms: Date.now() - inicio });
         return { texto, modelo };
       } catch (erro) {
+        registrar({ provedor: provedor.nome, modelo, tarefa, ok: false, ms: Date.now() - inicio, erro: String(erro.message).slice(0, 300) });
         ultimoErro = erro;
         if (erro.semExtras && !SEM_EXTRAS.has(modelo)) {
           // o modelo não aceitou reasoning_effort: repete o mesmo modelo sem ele

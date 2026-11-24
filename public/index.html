@@ -10,122 +10,26 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-  <script src="config.js?v=__VERSAO__"></script>
   <script type="module" src="app.js?v=__VERSAO__"></script>
 </head>
 <body>
+  <p id="faixa-demo" class="faixa-demo" hidden>Modo de demonstração: dados em memória, apagados quando o servidor reinicia.</p>
   <header class="topo">
-    <div class="marca">
+    <a class="marca" href="#/aulas">
       <span class="logo">π</span>
       <div>
         <h1>Proff</h1>
         <p>Plano de aula, slides e prova de Matemática em minutos</p>
       </div>
-    </div>
+    </a>
     <span id="status-provedores" class="status"></span>
   </header>
+  <div id="menu" class="barra-menu"></div>
 
-  <main>
-    <form id="form" class="cartao formulario">
-      <div class="campo">
-        <label for="serie">Série</label>
-        <select id="serie" required>
-          <option value="1">1º ano</option>
-          <option value="2">2º ano</option>
-          <option value="3">3º ano</option>
-        </select>
-      </div>
-
-      <div class="campo campo-largo">
-        <label for="assunto">Assunto</label>
-        <input id="assunto" list="lista-assuntos" required maxlength="150"
-               placeholder="Escolha da lista ou digite, ex.: Função afim" autocomplete="off">
-        <datalist id="lista-assuntos"></datalist>
-      </div>
-
-      <div class="campo campo-inteiro">
-        <label for="observacoes">Como você gostaria da aula? <span class="opcional">(opcional)</span></label>
-        <textarea id="observacoes" rows="3" maxlength="1500"
-                  placeholder="Ex.: 1 aula de 50 min, exemplos com futebol, prova com 10 questões só de múltipla escolha, turma com dificuldade em frações..."></textarea>
-      </div>
-
-      <details class="campo-inteiro config-chaves" id="config-chaves" hidden>
-        <summary>Chaves de API <span id="resumo-chaves" class="opcional"></span></summary>
-        <p class="dica" id="aviso-padrao"></p>
-        <p class="dica">
-          As suas chaves ficam salvas só neste navegador e vão direto para o provedor de IA.
-          São grátis e sem cartão: <a href="chaves.html" target="_blank">veja como gerar</a>.
-        </p>
-        <div id="campos-chaves" class="grade-chaves"></div>
-        <label class="opcao">
-          <input type="checkbox" id="modo-demo"> Modo demonstração (gera uma aula de exemplo, sem chave)
-        </label>
-        <button type="button" class="botao botao-pequeno" id="botao-limpar-chaves" hidden>Voltar às chaves padrão</button>
-      </details>
-
-      <div class="campo campo-inteiro" id="campo-senha" hidden>
-        <label for="senha">Código de acesso</label>
-        <input id="senha" type="password" autocomplete="current-password">
-      </div>
-
-      <button id="botao-gerar" class="botao botao-primario botao-gerar" type="submit">Gerar plano de aula</button>
-    </form>
-
-    <ol id="progresso" class="progresso" hidden></ol>
-
-    <p id="erro-geral" class="erro" hidden></p>
-
-    <section id="resultado" hidden>
-      <nav class="abas" role="tablist">
-        <button class="aba ativa" data-aba="plano" role="tab">Plano de aula</button>
-        <button class="aba" data-aba="slides" role="tab">Slides</button>
-        <button class="aba" data-aba="prova" role="tab">Avaliação</button>
-        <button class="aba" data-aba="gabarito" role="tab">Gabarito</button>
-        <button class="aba" data-aba="interativa" role="tab">Aula interativa</button>
-      </nav>
-
-      <div class="painel cartao" data-painel="plano">
-        <div class="acoes"><button class="botao" data-imprimir="plano">Imprimir / PDF</button></div>
-        <div id="conteudo-plano" class="documento"></div>
-      </div>
-
-      <div class="painel cartao" data-painel="slides" hidden>
-        <div class="acoes">
-          <button class="botao botao-primario botao-gerar" id="botao-gerar-slides">Gerar slides</button>
-          <button class="botao botao-primario" id="botao-apresentar" hidden>Apresentar</button>
-          <button class="botao" id="botao-pptx" hidden>Baixar .pptx</button>
-        </div>
-        <p class="dica" id="dica-slides" hidden>Na apresentação, aperte <kbd>S</kbd> para abrir as anotações do professor e <kbd>F</kbd> para tela cheia.</p>
-        <div id="conteudo-slides" class="grade-slides"></div>
-      </div>
-
-      <div class="painel cartao" data-painel="prova" hidden>
-        <div class="acoes">
-          <button class="botao botao-primario botao-gerar" id="botao-gerar-prova">Gerar avaliação</button>
-          <button class="botao" id="botao-imprimir-prova" data-imprimir="prova" hidden>Imprimir para os alunos</button>
-        </div>
-        <div id="conteudo-prova" class="documento"></div>
-      </div>
-
-      <div class="painel cartao" data-painel="gabarito" hidden>
-        <div class="acoes"><button class="botao" id="botao-imprimir-gabarito" data-imprimir="gabarito" hidden>Imprimir gabarito</button></div>
-        <div id="aviso-verificacao"></div>
-        <div id="conteudo-gabarito" class="documento"></div>
-      </div>
-      <div class="painel cartao" data-painel="interativa" hidden>
-        <div class="acoes">
-          <button class="botao botao-primario botao-gerar" id="botao-gerar-interativa">Gerar aula interativa</button>
-          <button class="botao botao-primario" id="botao-abrir-interativa" hidden>Abrir em nova aba</button>
-          <button class="botao" id="botao-baixar-interativa" hidden>Baixar .html</button>
-        </div>
-        <p class="dica" id="dica-interativa"></p>
-        <iframe id="previa-interativa" class="previa-interativa" title="Prévia da aula interativa" sandbox="allow-scripts allow-popups" hidden></iframe>
-      </div>
-    </section>
-  </main>
+  <main id="app" aria-live="polite"></main>
 
   <footer class="rodape">
-    Conteúdo gerado por IA. Revise antes de usar em sala. · <a href="chaves.html">Como gerar as chaves de API</a>
+    Conteúdo gerado por IA. Revise antes de usar em sala. · <a href="chaves.html">Configuração e chaves de API</a>
     <br><span class="versao">versão __VERSAO__</span>
   </footer>
 </body>

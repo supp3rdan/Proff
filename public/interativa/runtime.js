@@ -537,7 +537,7 @@
     return j.quiz.length || j.verdadeiro_falso.length || j.pares.length || j.desafios.length;
   }
 
-  const placar = { pontos: 0, max: 0, jogosFeitos: 0, totalJogos: 0 };
+  const placar = { pontos: 0, max: 0, jogosFeitos: 0, totalJogos: 0, erros: [] };
   function atualizarPlacar() {
     const pct = placar.max ? placar.pontos / placar.max : 0;
     const estrelas = '⭐'.repeat(Math.round(pct * 5)) + '☆'.repeat(5 - Math.round(pct * 5));
@@ -547,11 +547,49 @@
       $('.jogos-placar .mensagem').textContent = pct >= 0.8 ? '🏆 Mandou muito bem!' : pct >= 0.5 ? '👏 Bom trabalho! Revise o que errou.' : '💪 Releia a aula e tente de novo!';
       marcarFeito('jogos');
       if (pct >= 0.8) festa();
+      if (DADOS.envio) mostrarEnvio();
     }
   }
-  function pontuar(acertou) {
+  /** item: identificador do que foi respondido (ex.: "quiz:2"), para o professor ver o que a turma mais errou */
+  function pontuar(acertou, item) {
     placar.pontos += acertou ? 1 : 0;
+    if (!acertou && item) placar.erros.push(item);
     atualizarPlacar();
+  }
+
+  // ---------- envio do resultado ao professor (só quando a aula foi aberta pelo link) ----------
+  function mostrarEnvio() {
+    const area = $('.envio-resultado');
+    if (!area || area.dataset.mostrado) return;
+    area.dataset.mostrado = '1';
+    const chaveEnvio = CHAVE + ':enviado';
+    if (lerArmazenado(chaveEnvio, false)) {
+      area.replaceChildren(el('p', { classe: 'feedback ok', texto: '✅ Seu resultado já foi enviado ao professor.' }));
+      return;
+    }
+    const apelido = el('input', { type: 'text', maxlength: 40, placeholder: 'seu nome ou apelido', 'aria-label': 'Seu nome ou apelido', autocomplete: 'nickname' });
+    const enviar = el('button', { classe: 'botao botao-cheio botao-pequeno', type: 'submit', texto: 'Enviar ao professor' });
+    const aviso = el('div');
+    const form = el('form', {}, [apelido, enviar]);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!apelido.value.trim()) return apelido.focus();
+      enviar.disabled = true;
+      try {
+        const r = await fetch(DADOS.envio.url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apelido: apelido.value.trim(), acertos: placar.pontos, total: placar.max, erros: placar.erros }),
+        });
+        if (!r.ok) throw new Error((await r.json().catch(() => ({}))).erro || 'falha no envio');
+        gravar(chaveEnvio, true);
+        area.replaceChildren(el('p', { classe: 'feedback ok', texto: '✅ Resultado enviado! Seu professor vai ver como foi a turma.' }));
+      } catch (erro) {
+        enviar.disabled = false;
+        aviso.replaceChildren(el('p', { classe: 'feedback nao', texto: `Não foi possível enviar (${erro.message}). Tente de novo.` }));
+      }
+    });
+    area.replaceChildren(el('h3', { texto: '📨 Envie seu resultado ao professor' }), el('p', { texto: 'Só o seu apelido e a sua pontuação são enviados.' }), form, aviso);
   }
   function jogoConcluido() {
     placar.jogosFeitos++;
@@ -581,7 +619,7 @@
         const acertou = k === q.correta;
         b.classList.add(acertou ? 'certa' : 'errada');
         botoes[q.correta].classList.add('certa');
-        pontuar(acertou);
+        pontuar(acertou, `quiz:${i}`);
         feedback.replaceChildren(el('div', { classe: 'feedback ' + (acertou ? 'ok' : 'nao') }, [
           el('strong', { texto: acertou ? '✅ Acertou! ' : '❌ Quase! ' }), el('span', { texto: q.explicacao || '' }),
         ]), el('div', { classe: 'acoes' }, el('button', {
@@ -600,12 +638,12 @@
 
   function jogoVF(lista) {
     let respondidas = 0;
-    return el('div', {}, lista.map((v) => {
+    return el('div', {}, lista.map((v, indice) => {
       const linha = el('div', { classe: 'vf' });
       const responder = (resposta) => {
         linha.querySelectorAll('button').forEach((b) => (b.disabled = true));
         const acertou = resposta === v.verdadeiro;
-        pontuar(acertou);
+        pontuar(acertou, `vf:${indice}`);
         const fb = el('div', { classe: 'feedback ' + (acertou ? 'ok' : 'nao') }, [
           el('strong', { texto: (acertou ? '✅ ' : '❌ ') + (v.verdadeiro ? 'Verdadeiro. ' : 'Falso. ') }), el('span', { texto: v.explicacao || '' }),
         ]);
@@ -637,7 +675,7 @@
       if (!selecionado || b.classList.contains('feito')) return;
       if (b.dataset.i === selecionado.dataset.i) {
         [b, selecionado].forEach((x) => { x.classList.remove('selecionado'); x.classList.add('feito'); x.disabled = true; });
-        pontuar(errosNoPar === 0);
+        pontuar(errosNoPar === 0, `par:${b.dataset.i}`);
         errosNoPar = 0;
         selecionado = null;
         if (++feitos === lista.length) jogoConcluido();
@@ -653,7 +691,7 @@
 
   function jogoDesafios(lista) {
     let feitos = 0;
-    return el('div', {}, lista.map((d) => {
+    return el('div', {}, lista.map((d, indice) => {
       const fb = el('div');
       const entrada = el('input', { type: 'text', inputmode: 'decimal', placeholder: 'sua resposta', 'aria-label': 'Resposta' });
       let tentativas = 0;
@@ -670,7 +708,7 @@
         if (acertou || tentativas >= 2) {
           encerrado = true;
           entrada.disabled = true;
-          pontuar(acertou && tentativas === 1);
+          pontuar(acertou && tentativas === 1, `desafio:${indice}`);
           fb.replaceChildren(el('div', { classe: 'feedback ' + (acertou ? 'ok' : 'nao'), texto: acertou ? `✅ Isso mesmo! A resposta é ${fmt(d.resposta, 4)}.` : `❌ A resposta é ${fmt(d.resposta, 4)}.` }));
           if (++feitos === lista.length) jogoConcluido();
         } else {
@@ -694,6 +732,7 @@
       el('div', { classe: 'secao-cabecalho' }, [el('div', { classe: 'secao-icone', texto: '🎮' }), el('div', {}, [el('small', { texto: 'Fixação' }), el('h2', { texto: 'Teste seus conhecimentos' })])]),
       el('div', { classe: 'jogos-placar' }, [el('span', { classe: 'estrelas' }), el('span', { classe: 'pontos' }), el('span', { classe: 'mensagem' })]),
       ...jogos.map(([titulo, ajuda, corpo]) => el('div', { classe: 'jogo' }, [el('h3', { texto: titulo }), el('p', { texto: ajuda }), corpo])),
+      DADOS.envio ? el('div', { classe: 'jogo envio-resultado' }, el('p', { classe: 'previos', texto: '📨 Termine os jogos para enviar o seu resultado ao professor.' })) : null,
     ]);
   }
 
