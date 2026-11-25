@@ -59,7 +59,7 @@ Fluxo: navegador (`public/app.js`, rotas `#/…`) → `fetch /v1/<rota>` com Bea
 | Variáveis de ambiente (modelo) | `.env.example`; guia: `docs/CONFIGURACAO.md` |
 | Testes | `test/unidade.test.js`, `test/api.test.js`, `test/test_sympy.py` |
 
-Rotas sem login: `status`, `login-demo` (só memória), `publica/:slug` (+`/resultado`), `worker` (segredo). Página do aluno: `/a/:slug`.
+Rotas sem login: `status`, `login-demo` (só memória), `bncc`, `publica/:slug` (+`/resultado`), `worker` (segredo). Página do aluno: `/a/:slug`.
 
 Env: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (publishable `sb_publishable_…` ou legada), `SUPABASE_SERVICE_ROLE_KEY` (secret `sb_secret_…`), `GROQ_API_KEY`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `WORKER_SECRET`, `APP_URL`, `LIMITE_DIARIO` (400), `LLM_TIMEOUT_MS` (90000), `*_MODEL`, `VERCEL_AUTOMATION_BYPASS_SECRET`; dev: `DB_MEMORIA`, `LLM_MOCK`, `FILA_HTTP`, `PORT`.
 
