@@ -8,8 +8,8 @@ Gerador de plano de aula, slides (.pptx), avaliação c/ gabarito e aula interat
 |---|---|
 | Runtime | Node ≥20 (CI: 22), ESM (`"type": "module"`), JS puro — sem framework, sem bundler, sem TypeScript |
 | Python | 3.12 (CI), só `api/sympy_comparar.py`; dep única `sympy==1.14.0` |
-| Deps npm | `@supabase/supabase-js` ^2, `@vercel/functions` ^2 (só servidor) |
-| Front (CDN) | supabase-js@2 ESM, KaTeX 0.16.11, pptxgenjs 3.12.0 (em `public/index.html` / `sessao.js`) |
+| Deps npm | `@supabase/supabase-js` ^2, `@vercel/functions` ^2 (só servidor); dev: `docx` **9.8.1** (só testes; mesma versão da CDN em `listas.js`) |
+| Front (CDN) | supabase-js@2 ESM, KaTeX 0.16.11, pptxgenjs 3.12.0, docx 9.8.1 (sob demanda), MathJax, Reveal.js, qrcode |
 | Pacotes | npm (`package-lock.json`) + pip (`requirements.txt`) |
 | IA | Groq (Llama 3.3 texto / gpt-oss matemática), Gemini, OpenRouter — APIs grátis, chaves só no servidor |
 
@@ -41,7 +41,7 @@ Fluxo: navegador (`public/app.js`, rotas `#/…`) → `fetch /v1/<rota>` com Bea
 | HTTP util (corpo ≤800 KB, token, HTML) | `lib/http.js` |
 | BNCC (43 EM13MAT) — espelho do SQL | `lib/bncc.js` |
 | Painel de resultados | `lib/resultados.js` |
-| Schema, RLS, RPCs, realtime, seed BNCC (idempotente) | `supabase/migrations/20261124000000_proff.sql` |
+| Schema, RLS, RPCs, realtime, seed BNCC (idempotente) | `supabase/migrations/20261124000000_proff.sql`; projeto antigo também roda `20261125000000_planejamento_detalhado.sql` (`sequencias.detalhes`) |
 | Provedores/modelos, fallback, `corrigirChaves`, mock | `public/core/llm.js`, `public/core/mock.js` |
 | Prompts, níveis (regular/reforço/avançado/inclusão) | `public/core/prompts.js` |
 | Geração/validação (`validarEntrada`, `conferirProva`, `conferirBncc`) | `public/core/gerador.js` |
@@ -49,6 +49,7 @@ Fluxo: navegador (`public/app.js`, rotas `#/…`) → `fetch /v1/<rota>` com Bea
 | Aula interativa: dados / montagem HTML / runtime | `public/core/interativa.js`, `public/interativa/{montar.js,runtime.js,pagina.css}` |
 | LaTeX sem `$` → delimitado | `public/core/latex.js` |
 | Provas A/B (embaralhamento por semente) | `public/core/versoes.js` |
+| Planejamento do bimestre: prompt `promptPlanejamento`, validação `validarPlanejamento`, .docx (tabela BNCC/objetivos/conteúdos) | `public/core/prompts.js`, `public/core/gerador.js`, `public/core/planejamento-docx.js`; tela `telaSequencia` |
 | App: login/sessão/fila | `public/js/sessao.js`; HTTP `public/js/api.js`; DOM `public/js/ui.js` |
 | Telas | `public/js/views/aula.js`, `public/js/views/listas.js`; rotas em `public/app.js` |
 | Slides HTML / PowerPoint | `public/slides-render.js`, `public/slides.html`, `public/pptx.js`, `public/pptx-matematica.js` |
@@ -58,6 +59,8 @@ Fluxo: navegador (`public/app.js`, rotas `#/…`) → `fetch /v1/<rota>` com Bea
 | Rotas, funções, redirects, headers | `vercel.json` |
 | Variáveis de ambiente (modelo) | `.env.example`; guia: `docs/CONFIGURACAO.md` |
 | Testes | `test/unidade.test.js`, `test/api.test.js`, `test/test_sympy.py` |
+
+Bimestre: `POST sequencias` (etapas `sequencia` → `planejamento` opcional), `POST sequencias/:id/detalhar` (só `planejamento`), `PATCH sequencias/:id` (cabeçalho professor/escola/turma em `detalhes.cabecalho`). `detalhes.planejamento` = ementa, habilidades (só lista oficial), objetivos, conteúdos, competências, avaliação.
 
 Rotas sem login: `status`, `login-demo` (só memória), `bncc`, `publica/:slug` (+`/resultado`), `worker` (segredo). Página do aluno: `/a/:slug`.
 
@@ -105,6 +108,9 @@ Env: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (publishable `sb_publishable_…` ou le
 | Evento de recuperação perdido | `onAuthStateChange` registrado depois de `getSession` | registrar listener antes; checar `type=recovery` na URL |
 | 404 ao trocar de professor | hash de aula do outro mantido | `Sair` faz `history.replaceState(…'#/aulas')` |
 | Página rola para o lado no celular | `table.tabela` larga | `display:block; overflow-x:auto` ≤760 px |
+| .docx com entradas de pasta no ZIP (falha no OneDrive/SharePoint) | `docx` (JSZip) grava pastas | `removerPastasDoZip` antes do download; teste em `unidade.test.js` |
+| `\u0300-\u036f` virou caractere literal ao escrever arquivo | ferramenta de escrita interpreta escapes | depois de escrever, procurar U+0300–036F/U+2028/U+200B no repo |
+| Coluna `sequencias.detalhes` ausente em banco antigo | migration nova não rodada | `ErroBancoDesatualizado` (503 com instrução); criação de sequência continua sem a coluna |
 
 **Armadilhas**
 - `R$` conflita com delimitador `$`: proteger antes de renderizar (`MARCADOR`) e regex `(?<!R)\$`.

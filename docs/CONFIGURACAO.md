@@ -76,6 +76,10 @@ Se algo falhar, veja em **Vercel → Deployments → (deploy) → Logs** e me ma
 - O Supabase grátis envia poucos e-mails por hora. Com muitos professores se cadastrando, configure um SMTP próprio em **Authentication → Emails → SMTP Settings**.
 - Projetos grátis do Supabase podem ser pausados após um período sem uso; basta reativar no painel.
 
+## Atualizar o banco (projetos criados antes de 25/11/2026)
+
+Para o planejamento detalhado do bimestre e o download em .docx: **SQL Editor → New query**, cole o conteúdo de [`supabase/migrations/20261125000000_planejamento_detalhado.sql`](../supabase/migrations/20261125000000_planejamento_detalhado.sql) e clique em **Run**. Pode ser rodado mais de uma vez.
+
 ## Login com e-mail e senha
 
 - Por padrão o Supabase pede **confirmação por e-mail** ao criar conta, e o servidor de e-mail gratuito dele envia poucos e-mails por hora.

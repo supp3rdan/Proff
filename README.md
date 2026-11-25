@@ -8,19 +8,19 @@ Gerador de **plano de aula**, **slides**, **avaliação com gabarito conferido**
 
 Preparar uma aula completa (plano, slides, prova com gabarito e atividade para os alunos) toma horas do professor. No Proff, o professor escolhe a **série**, o **assunto** e o **nível da turma**. O sistema gera cada parte em separado, para ser revisada: o plano segue um roteiro fixo e cita habilidades da BNCC, a prova tem o gabarito conferido por um segundo modelo e pelo SymPy, e a aula interativa vira um link que os alunos abrem no celular, com os resultados chegando ao professor.
 
-Principais funções: biblioteca de aulas com turma e bimestre · editor com "refazer slide" e "trocar questão" · exportação para PowerPoint · provas A e B · banco de questões · planejamento do bimestre · versões de reforço, avançado e inclusão (DUA) · link, QR Code, Google Classroom e WhatsApp · painel de desempenho por turma · comunidade de professores.
+Principais funções: biblioteca de aulas com turma e bimestre · editor com "refazer slide" e "trocar questão" · exportação para PowerPoint · provas A e B · banco de questões · planejamento do bimestre com BNCC, objetivos e conteúdos, baixado em Word (.docx) · versões de reforço, avançado e inclusão (DUA) · link, QR Code, Google Classroom e WhatsApp · painel de desempenho por turma · comunidade de professores.
 
 ## Stack
 
 | Parte | Tecnologia |
 |---|---|
 | Front-end | HTML, CSS e JavaScript (módulos ES) sem framework nem bundler, em `public/` |
-| Bibliotecas do navegador (CDN) | supabase-js 2, KaTeX 0.16.11, pptxgenjs 3.12.0, MathJax 3.2.2, Reveal.js 5.1.0, qrcode-generator 1.4.4 |
+| Bibliotecas do navegador (CDN) | supabase-js 2, KaTeX 0.16.11, pptxgenjs 3.12.0, docx 9.8.1, MathJax 3.2.2, Reveal.js 5.1.0, qrcode-generator 1.4.4 |
 | Back-end | Funções serverless na **Vercel**: Node.js ≥ 20 (`api/r.js`) e Python 3.12 com SymPy 1.14 (`api/sympy_comparar.py`) |
 | Banco e login | **Supabase** (Postgres com RLS, Auth, Realtime) |
 | IA | Groq, Gemini e OpenRouter, com troca automática de provedor e modelo |
 | Testes | `node:test` e `unittest` (Python); CI no GitHub Actions |
-| Pacotes | npm (`@supabase/supabase-js`, `@vercel/functions`) e pip (`sympy`) |
+| Pacotes | npm (`@supabase/supabase-js`, `@vercel/functions`; `docx` só nos testes) e pip (`sympy`) |
 
 ## Pré-requisitos
 

@@ -162,6 +162,21 @@ test('fluxo completo, segurança entre professores e funções novas', async () 
   assert.equal((await esperarTarefa(ana, seq.tarefa.id)).status, 'pronta');
   const s = (await chamar('GET', `sequencias/${seq.sequencia.id}`, { token: ana })).dados.sequencia;
   assert.equal(s.itens.length, 4);
+  // planejamento detalhado: só códigos BNCC da lista oficial, competências válidas
+  const pl = s.detalhes.planejamento;
+  assert.deepEqual(pl.habilidades.map((h) => h.codigo), ['EM13MAT302', 'EM13MAT401', 'EM13MAT501']);
+  assert.deepEqual(pl.competencias_gerais, [1, 2, 4, 7]);
+  assert.deepEqual(pl.competencias_especificas, [3, 4, 5]);
+  assert.ok(pl.objetivos.length >= 6 && pl.conteudos.length === 2);
+  // cabeçalho do documento .docx
+  const cab = (await chamar('PATCH', `sequencias/${s.id}`, { token: ana, corpo: { professor: 'Ana Souza', escola: 'E. E. Teste', turma: '1º A' } })).dados.sequencia;
+  assert.equal(cab.detalhes.cabecalho.professor, 'Ana Souza');
+  assert.ok(cab.detalhes.planejamento, 'salvar o cabeçalho não apaga o planejamento');
+  assert.equal((await chamar('PATCH', `sequencias/${s.id}`, { token: bia, corpo: { professor: 'X' } })).status, 404);
+  // refazer só o planejamento (sem refazer a lista de aulas)
+  const refazer = (await chamar('POST', `sequencias/${s.id}/detalhar`, { token: ana })).dados;
+  assert.deepEqual(refazer.tarefa.etapas.map((e) => e.id), ['planejamento']);
+  assert.equal((await esperarTarefa(ana, refazer.tarefa.id)).status, 'pronta');
   const daSequencia = (await chamar('POST', 'aulas', { token: ana, corpo: { serie: '1', assunto: s.itens[1].assunto, sequencia_id: s.id, ordem: 2 } })).dados;
   const s2 = (await chamar('GET', `sequencias/${s.id}`, { token: ana })).dados.sequencia;
   assert.equal(s2.itens[1].aula_id, daSequencia.aula.id);

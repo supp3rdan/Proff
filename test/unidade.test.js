@@ -293,3 +293,36 @@ test('fórmula em LaTeX sem $ ganha delimitadores', async () => {
   const { segmentar } = await import('../public/pptx-matematica.js');
   assert.deepEqual(segmentar('Calcule \\sqrt{16}.'), [{ texto: 'Calcule ' }, { mat: '\\sqrt{16}' }, { texto: '.' }]);
 });
+
+test('documento .docx do planejamento: tabela do bimestre, sem LaTeX e com nome de arquivo limpo', async () => {
+  const { createRequire } = await import('node:module');
+  const docx = createRequire(import.meta.url)('docx');
+  const { montarDocumentoPlanejamento, nomeArquivoPlanejamento, textoSemLatex } = await import('../public/core/planejamento-docx.js');
+  const { validarPlanejamento } = await import('../public/core/gerador.js');
+  const { BNCC_PADRAO } = await import('../lib/bncc.js');
+  const planejamento = validarPlanejamento({
+    ementa: 'Funções.', habilidades: [{ codigo: 'EM13MAT302' }, { codigo: 'XX' }], objetivos: ['Calcular $\\frac{1}{2}$ de um valor.'],
+    conteudos: [{ tema: 'Função afim', topicos: ['Gráfico'] }], competencias_gerais: [2, 2, 11, 1], avaliacao: ['Prova'],
+  }, BNCC_PADRAO);
+  assert.deepEqual(planejamento.competencias_gerais, [1, 2]);
+  assert.deepEqual(planejamento.competencias_especificas, [3]);
+  assert.throws(() => validarPlanejamento({ objetivos: [], conteudos: [] }, BNCC_PADRAO));
+  assert.equal(textoSemLatex('Calcule $\\frac{1}{2} \\cdot x$'), 'Calcule (1)/(2) · x');
+  const s = { serie: 1, bimestre: 2, quantidade: 2, titulo: 'Funções: afim/quadrática', conteudos: 'Funções', itens: [{ ordem: 1, assunto: 'Afim', objetivo: 'o', observacoes: '' }],
+    detalhes: { planejamento, cabecalho: { professor: 'Ana', escola: 'Escola X' } } };
+  assert.equal(nomeArquivoPlanejamento(s), 'Planejamento 2º bimestre 1º ano - Funcoes afimquadratica.docx');
+  const { removerPastasDoZip } = await import('../public/core/planejamento-docx.js');
+  const bruto = new Uint8Array(await docx.Packer.toBuffer(montarDocumentoPlanejamento(docx, s)));
+  const limpo = removerPastasDoZip(bruto);
+  // nomes do diretório central do ZIP
+  const nomes = (z) => {
+    const b = Buffer.from(z);
+    const lista = [];
+    for (let i = b.indexOf('PK\x01\x02', 0, 'latin1'); i >= 0; i = b.indexOf('PK\x01\x02', i + 4, 'latin1')) lista.push(b.toString('utf8', i + 46, i + 46 + b.readUInt16LE(i + 28)));
+    return lista;
+  };
+  assert.ok(nomes(bruto).some((n) => n.endsWith('/')), 'a biblioteca gera pastas');
+  assert.ok(limpo[0] === 0x50 && limpo[1] === 0x4b, 'continua sendo um ZIP');
+  assert.deepEqual(nomes(limpo), nomes(bruto).filter((n) => !n.endsWith('/')));
+  assert.ok(nomes(limpo).includes('word/document.xml'));
+});

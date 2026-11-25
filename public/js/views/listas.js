@@ -1,12 +1,15 @@
 // Telas de listas e cadastros: nova aula, minhas aulas, turmas, bimestre,
 // banco de questões e comunidade.
 
-import { get, post, del } from '../api.js?v=__VERSAO__';
+import { get, post, patch, del } from '../api.js?v=__VERSAO__';
 import { acompanharTarefa } from '../sessao.js?v=__VERSAO__';
 import {
   el, substituir, botao, aviso, confirmar, campo, seletor, NIVEIS, rotuloNivel, dataCurta,
-  renderizarMatematica, carregando, mostrarErro,
+  renderizarMatematica, carregando, mostrarErro, janela,
 } from '../ui.js?v=__VERSAO__';
+import {
+  montarDocumentoPlanejamento, nomeArquivoPlanejamento, removerPastasDoZip, COMPETENCIAS_GERAIS, COMPETENCIAS_ESPECIFICAS,
+} from '../../core/planejamento-docx.js?v=__VERSAO__';
 import { ASSUNTOS } from '../../assuntos.js?v=__VERSAO__';
 
 const SERIES = [['1', '1º ano'], ['2', '2º ano'], ['3', '3º ano']];
@@ -270,13 +273,123 @@ export async function telaBimestre(alvo) {
   carregar();
 }
 
+// ---------- planejamento detalhado e documento .docx ----------
+const DOCX_JS = 'https://cdn.jsdelivr.net/npm/docx@9.8.1/dist/index.iife.js';
+
+async function bibliotecaDocx() {
+  if (window.docx?.Packer) return window.docx;
+  await new Promise((ok, falha) => {
+    const s = el('script', { src: DOCX_JS });
+    s.onload = ok;
+    s.onerror = () => falha(new Error('Não foi possível carregar o gerador de .docx. Confira a conexão e tente de novo.'));
+    document.head.append(s);
+  });
+  return window.docx;
+}
+
+async function baixarDocx(s) {
+  const docx = await bibliotecaDocx();
+  const bruto = new Uint8Array(await (await docx.Packer.toBlob(montarDocumentoPlanejamento(docx, s))).arrayBuffer());
+  const blob = new Blob([removerPastasDoZip(bruto)], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+  const url = URL.createObjectURL(blob);
+  const a = el('a', { href: url, download: nomeArquivoPlanejamento(s) });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+/** Janela com professor, escola e turma (vão para o cabeçalho do documento e ficam salvos). */
+function abrirDownloadDocx(s, turmaNome, aoSalvar) {
+  const cab = s.detalhes?.cabecalho || {};
+  const professor = el('input', { type: 'text', maxlength: 120, value: cab.professor || '', autocomplete: 'name' });
+  const escola = el('input', { type: 'text', maxlength: 160, value: cab.escola || '' });
+  const turma = el('input', { type: 'text', maxlength: 60, value: cab.turma || turmaNome || '' });
+  const msg = el('p', { classe: 'dica', texto: 'Esses dados aparecem no cabeçalho do documento. Todos são opcionais e ficam salvos para a próxima vez.' });
+  const j = janela('Baixar planejamento (.docx)', [campo('Professor(a)', professor), campo('Escola', escola), campo('Turma', turma), msg], {
+    acoes: [
+      botao('Cancelar', () => j.fechar()),
+      botao('Baixar .docx', async (ev) => {
+        const b = ev.currentTarget;
+        b.disabled = true;
+        const cabecalho = { professor: professor.value.trim(), escola: escola.value.trim(), turma: turma.value.trim() };
+        let doc = { ...s, detalhes: { ...(s.detalhes || {}), cabecalho } };
+        try {
+          doc = (await patch(`sequencias/${s.id}`, cabecalho)).sequencia;
+          aoSalvar?.(doc);
+        } catch (erro) {
+          aviso(`O documento foi gerado, mas o cabeçalho não foi salvo: ${erro.message}`, 'erro');
+        }
+        try {
+          await baixarDocx(doc);
+          j.fechar();
+          aviso('Planejamento baixado. Abra no Word, LibreOffice ou Google Docs para editar.');
+        } catch (erro) {
+          msg.textContent = erro.message;
+          msg.className = 'erro';
+          b.disabled = false;
+        }
+      }, 'botao botao-primario'),
+    ],
+  });
+  professor.focus();
+}
+
+function secaoPlanejamento(p) {
+  const bloco = (titulo, conteudo) => el('div', { classe: 'cartao bloco-planejamento' }, [el('h3', { texto: titulo }), ...conteudo]);
+  const lista = (itens, classe = '') => el('ul', { classe }, itens.map((t) => el('li', { texto: t })));
+  return el('section', { classe: 'planejamento', 'aria-label': 'Planejamento detalhado' }, [
+    p.ementa ? el('p', { classe: 'ementa' }, [el('strong', { texto: 'Ementa: ' }), p.ementa]) : null,
+    el('div', { classe: 'grade-planejamento' }, [
+      bloco('Habilidades (BNCC)', p.habilidades.length
+        ? p.habilidades.map((h) => el('p', { classe: 'habilidade' }, [el('strong', { texto: `${h.codigo} ` }), h.descricao]))
+        : [vazio('Nenhuma habilidade da lista oficial foi escolhida.')]),
+      bloco('Objetivos de aprendizagem', [lista(p.objetivos, 'lista-check')]),
+      bloco('Conteúdos', p.conteudos.flatMap((c) => [el('p', { classe: 'tema', texto: c.tema }), lista(c.topicos, 'lista-check')])),
+    ]),
+    el('div', { classe: 'grade-planejamento grade-planejamento-2' }, [
+      bloco('Competências', [
+        el('p', { classe: 'meta', texto: 'Gerais' }),
+        lista(p.competencias_gerais.map((n) => `${n}. ${COMPETENCIAS_GERAIS[n]}`), 'lista-simples'),
+        p.competencias_especificas.length ? el('p', { classe: 'meta', texto: 'Específicas de Matemática' }) : null,
+        lista(p.competencias_especificas.map((n) => `${n}. ${COMPETENCIAS_ESPECIFICAS[n]}`), 'lista-simples'),
+      ]),
+      bloco('Avaliação', [lista(p.avaliacao, 'lista-check'), p.recuperacao ? el('p', { texto: `Recuperação: ${p.recuperacao}` }) : null]),
+    ]),
+  ]);
+}
+
 export async function telaSequencia(alvo, seqId, ctx) {
   substituir(alvo, carregando());
   let parar = null;
+  function seguir(tarefaId) {
+    parar = acompanharTarefa(tarefaId, (t) => {
+      if (!['pronta', 'erro'].includes(t.status)) return;
+      parar = null;
+      const falha = t.etapas?.find((e) => e.situacao === 'erro');
+      if (falha) aviso(`${falha.rotulo}: ${falha.detalhe || 'não foi possível gerar.'}`, 'erro');
+      desenhar();
+    });
+  }
   async function desenhar() {
     try {
       const { sequencia: s, tarefas } = await get(`sequencias/${seqId}`);
       const ativa = tarefas.find((t) => ['pendente', 'rodando'].includes(t.status));
+      const p = s.detalhes?.planejamento;
+      const etapaAtual = ativa?.etapas?.find((e) => e.situacao !== 'pronto');
+      let turmaNome = '';
+      if (s.turma_id) turmaNome = (await get('turmas').catch(() => ({ turmas: [] }))).turmas.find((t) => t.id === s.turma_id)?.nome || '';
+      const detalhar = async () => {
+        try {
+          const { tarefa } = await post(`sequencias/${s.id}/detalhar`);
+          parar?.();
+          parar = null;
+          seguir(tarefa.id);
+          desenhar();
+        } catch (erro) {
+          aviso(erro.message, 'erro');
+        }
+      };
       substituir(alvo,
         el('a', { href: '#/bimestre', classe: 'voltar', texto: '← Bimestre' }),
         el('div', { classe: 'titulo-tela' }, [
@@ -287,7 +400,15 @@ export async function telaSequencia(alvo, seqId, ctx) {
           }, 'botao botao-perigo'),
         ]),
         el('p', { classe: 'meta', texto: `${s.serie}º ano${s.bimestre ? ` · ${s.bimestre}º bimestre` : ''} · Conteúdos: ${s.conteudos}` }),
-        ativa ? el('p', { classe: 'vazio', texto: 'Montando a sequência de aulas…' }) : null,
+        ativa ? el('p', { classe: 'vazio', texto: etapaAtual?.id === 'planejamento' ? 'Escrevendo o planejamento detalhado (BNCC, objetivos e conteúdos)…' : 'Montando a sequência de aulas…' }) : null,
+        !ativa && s.itens.length ? el('div', { classe: 'acoes acoes-esquerda' }, [
+          p ? botao('Baixar .docx', () => abrirDownloadDocx(s, turmaNome, () => desenhar()), 'botao botao-primario') : null,
+          p
+            ? botao('Refazer o planejamento detalhado', detalhar, 'botao')
+            : botao('Gerar planejamento detalhado', detalhar, 'botao botao-primario'),
+        ]) : null,
+        p ? secaoPlanejamento(p) : null,
+        s.itens.length ? el('h2', { texto: 'Sequência de aulas' }) : null,
         !ativa && !s.itens.length ? el('p', { classe: 'erro', texto: 'Não foi possível montar a sequência. Exclua e tente de novo.' }) : null,
         el('ol', { classe: 'sequencia' }, s.itens.map((i) => el('li', { classe: 'cartao' }, [
           el('div', {}, [el('strong', { texto: `Aula ${i.ordem}: ${i.assunto}` }), el('p', { texto: i.objetivo }), i.observacoes ? el('p', { classe: 'meta', texto: i.observacoes }) : null]),
@@ -300,9 +421,8 @@ export async function telaSequencia(alvo, seqId, ctx) {
             }), 'botao botao-primario'),
         ]))),
       );
-      if (ativa && !parar) {
-        parar = acompanharTarefa(ativa.id, (t) => { if (['pronta', 'erro'].includes(t.status)) { parar = null; desenhar(); } });
-      }
+      if (ativa && !parar) seguir(ativa.id);
+      renderizarMatematica(alvo);
     } catch (erro) {
       mostrarErro(alvo, erro);
     }

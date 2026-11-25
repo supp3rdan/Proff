@@ -78,7 +78,7 @@ flowchart LR
 | Supabase Postgres | Todos os dados (via `service_role` no servidor) | `lib/db.js` |
 | Supabase Realtime | Progresso das tarefas em tempo real (`postgres_changes` em `tarefas`) | `public/js/sessao.js` |
 | Groq, Gemini, OpenRouter | Geração de conteúdo e conferência de gabarito | `public/core/llm.js`, `lib/ia.js` |
-| jsDelivr | KaTeX, pptxgenjs, MathJax (fórmulas em imagem no .pptx), Reveal.js (apresentação), supabase-js, qrcode-generator | `public/index.html`, `public/slides.html`, `public/pptx-matematica.js`, `public/js/sessao.js`, `public/js/views/aula.js` |
+| jsDelivr | KaTeX, pptxgenjs, MathJax (fórmulas em imagem no .pptx), Reveal.js (apresentação), docx 9.8.1 (planejamento em Word), supabase-js, qrcode-generator | `public/index.html`, `public/slides.html`, `public/pptx-matematica.js`, `public/js/sessao.js`, `public/js/views/aula.js` |
 | Google Classroom e WhatsApp | Só links de compartilhamento (`classroom.google.com/share?url=…`, `wa.me/?text=…`); sem API | `public/js/views/aula.js` |
 
 ## 2. Fluxos principais
@@ -169,7 +169,7 @@ Etapas por tipo (`etapasDaTarefa`):
 | `slides` | `material:<seção>` e `formatar:<seção>` para cada seção de `public/core/estrutura.js` → `montar-slides` |
 | `prova` | `questoes:multipla` → `questoes:discursiva` → `conferir` |
 | `interativa` | `artigo:<seção>` para cada seção → `visualizacoes` (opcional) → `jogos` |
-| `sequencia` | `sequencia` |
+| `sequencia` | `sequencia` (lista de aulas, pulada se já existe) → `planejamento` (opcional: ementa, BNCC, objetivos, conteúdos, competências, avaliação) |
 
 ### 2.3 Chamada à IA (cache, limite, troca de provedor)
 
@@ -279,7 +279,7 @@ sequenceDiagram
 | `service_role` no servidor + RLS no banco | O backend confere o dono no código (`aulaDoProfessor`, `turmaDoProfessor`…) e o RLS protege o acesso direto pelo navegador |
 | Modo memória (`DB_MEMORIA=1`) e IA simulada (`LLM_MOCK=1`) | Rodar e testar sem Supabase e sem chaves; os testes de integração usam esse modo |
 | `__VERSAO__` nos endereços dos arquivos | Evitar cache antigo no navegador; `scripts/build.js` troca pelo commit no deploy |
-| PowerPoint gerado no navegador (pptxgenjs) | A IA gera só o conteúdo; o layout dos slides é fixo no código (`public/pptx.js`) |
+| PowerPoint e Word gerados no navegador (pptxgenjs, docx) | A IA gera só o conteúdo; o layout é fixo no código (`public/pptx.js`, `public/core/planejamento-docx.js`) |
 
 ## 4. Tratamento de erros
 

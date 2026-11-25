@@ -107,6 +107,8 @@ create table if not exists public.sequencias (
   itens jsonb not null default '[]'::jsonb,     -- [{ordem, assunto, objetivo, observacoes, aula_id}]
   criado_em timestamptz not null default now()
 );
+-- planejamento detalhado (habilidades, objetivos, conteúdos) e cabeçalho do documento .docx
+alter table public.sequencias add column if not exists detalhes jsonb not null default '{}'::jsonb;
 create index if not exists sequencias_professor on public.sequencias (professor_id, criado_em desc);
 
 -- ---------------------------------------------------------------------------

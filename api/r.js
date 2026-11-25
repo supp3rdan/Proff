@@ -442,6 +442,24 @@ rota('GET', 'sequencias/:id', async ({ usuario, params }) => {
   return { sequencia, tarefas };
 });
 
+/** Gera (ou gera de novo) só o planejamento detalhado de uma sequência que já tem a lista de aulas. */
+rota('POST', 'sequencias/:id/detalhar', async ({ usuario, params }) => {
+  const sequencia = await sequenciaDoProfessor(params.id, usuario);
+  if (!sequencia.itens?.length) throw new ErroHttp(409, 'Espere a sequência de aulas ficar pronta.');
+  const ativa = (await db.tarefasAtivas({ sequenciaId: sequencia.id }))[0];
+  if (ativa) return { tarefa: ativa };
+  const tarefa = await iniciarTarefa({ tipo: 'sequencia', professorId: usuario.id, sequencia, semCache: Boolean(sequencia.detalhes?.planejamento) });
+  return { tarefa };
+});
+
+/** Cabeçalho do documento .docx do planejamento (professor, escola, turma). */
+rota('PATCH', 'sequencias/:id', async ({ usuario, params, corpo }) => {
+  const s = await sequenciaDoProfessor(params.id, usuario);
+  const cabecalho = { professor: texto(corpo.professor, 120), escola: texto(corpo.escola, 160), turma: texto(corpo.turma, 60) };
+  const sequencia = await db.atualizarSequencia(s.id, { detalhes: { ...(s.detalhes || {}), cabecalho } });
+  return { sequencia };
+});
+
 rota('DELETE', 'sequencias/:id', async ({ usuario, params }) => {
   const s = await sequenciaDoProfessor(params.id, usuario);
   await db.excluirSequencia(s.id);
@@ -504,6 +522,7 @@ export default async function handler(req, res) {
     if (erro instanceof ErroEntrada) return enviarJSON(res, 400, { erro: erro.message });
     if (erro instanceof ErroLimite) return enviarJSON(res, 429, { erro: erro.message });
     if (erro instanceof ErroLLM) return enviarJSON(res, 503, { erro: erro.message });
+    if (erro instanceof db.ErroBancoDesatualizado) return enviarJSON(res, 503, { erro: erro.message });
     console.error(`[api ${req.method} ${caminho}]`, erro);
     return enviarJSON(res, 500, { erro: 'Erro inesperado no servidor. Tente de novo.' });
   }

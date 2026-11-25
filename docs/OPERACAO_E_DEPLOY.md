@@ -34,7 +34,7 @@ flowchart LR
 | Funções | `api/r.js` (Node, `maxDuration` 300 s, inclui `public/core/**`, `public/interativa/**`, `lib/**`); `api/sympy_comparar.py` (Python, 30 s, `requirements.txt`) | API e conferência simbólica |
 | Reescritas | `/v1/:rota*` → `/api/r?rota=:rota*`; `/a/:slug` → `/api/r?rota=publica/:slug` | Endereços curtos da API e da aula do aluno |
 | Redirecionamento | `/conheca` → `/conheca/` (permanente) | Caminhos relativos da apresentação |
-| Banco | `supabase/migrations/20261124000000_proff.sql` | Rodado à mão no SQL Editor do Supabase; pode ser rodado de novo |
+| Banco | `supabase/migrations/20261124000000_proff.sql` (projeto novo) e `20261125000000_planejamento_detalhado.sql` (projeto criado antes de 25/11/2026) | Rodados à mão no SQL Editor do Supabase; podem ser rodados de novo |
 
 **Containerização:** não há. O projeto não tem Dockerfile nem docker-compose; o ambiente de execução é o da Vercel (funções serverless) e, localmente, `node server.js`.
 
@@ -110,3 +110,5 @@ Limpeza opcional comentada no fim da migration: apagar `eventos_ia` e `cache_ia`
 | Aluno vê "Esta aula não está mais disponível" | Aula despublicada, excluída ou sem jogos | Gerar a aula interativa e ativar o link de novo |
 | Link do aluno pede login da Vercel | Proteção de previews | Usar o link de produção |
 | Projeto do Supabase pausado | Inatividade no plano gratuito | Reativar no painel do Supabase |
+| "O banco de dados precisa ser atualizado" no bimestre | Coluna `sequencias.detalhes` não existe | Rodar `supabase/migrations/20261125000000_planejamento_detalhado.sql` no SQL Editor |
+| "Não foi possível carregar o gerador de .docx" | CDN jsDelivr bloqueada | Conferir a rede; o arquivo vem de `cdn.jsdelivr.net/npm/docx@9.8.1` |

@@ -339,6 +339,29 @@ Formato do JSON:
   };
 }
 
+/** Planejamento detalhado do bimestre (padrão de planejamento escolar: habilidades, objetivos, conteúdos). */
+export function promptPlanejamento({ serie, bimestre, conteudos, itens = [], bncc = [] }) {
+  return {
+    sistema: REGRAS_GERAIS,
+    usuario: `Série: ${serie}º ano do Ensino Médio.${bimestre ? ` Bimestre: ${bimestre}º.` : ''}
+Conteúdos do período (informados pelo professor): """${conteudos}"""
+Sequência de aulas já definida: ${JSON.stringify(itens.map((i) => ({ ordem: i.ordem, assunto: i.assunto })))}
+
+Escreva o planejamento do bimestre no padrão usado pelas escolas brasileiras [planejamento].
+- "ementa": 1 ou 2 frases com os grandes temas do período.
+- "habilidades": de 3 a 8 códigos SOMENTE desta lista oficial da BNCC (os que o período realmente trabalha):
+${bncc.map((h) => `${h.codigo}: ${h.resumo}`).join('\n')}
+- "objetivos": de 6 a 12 objetivos de aprendizagem, cada um começando com verbo no infinitivo (Compreender, Calcular, Resolver...), específicos dos conteúdos.
+- "conteudos": de 2 a 6 temas, cada um com 3 a 10 tópicos curtos (como num sumário de livro didático).
+- "competencias_gerais": números (1 a 10) das competências gerais da BNCC mais mobilizadas no período (de 3 a 6).
+- "avaliacao": de 3 a 5 instrumentos de avaliação coerentes com os conteúdos (ex.: "Prova escrita com questões contextualizadas").
+- "recuperacao": 1 frase sobre como será a recuperação de conteúdo.
+
+Formato do JSON:
+{ "ementa": "string", "habilidades": [{ "codigo": "EM13MAT..." }], "objetivos": ["string"], "conteudos": [{ "tema": "string", "topicos": ["string"] }], "competencias_gerais": [1], "avaliacao": ["string"], "recuperacao": "string" }`,
+  };
+}
+
 // ---------- regerar só uma parte ----------
 
 const CAMPOS_TIPO = {

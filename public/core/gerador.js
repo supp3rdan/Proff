@@ -12,6 +12,7 @@ import {
   promptVisualizacoes,
   promptJogos,
   promptSequencia,
+  promptPlanejamento,
   promptRegerarSlide,
   promptRegerarQuestao,
 } from './prompts.js?v=__VERSAO__';
@@ -65,14 +66,14 @@ export async function gerarPlano(llm, entrada, visao, extras = {}) {
 }
 
 /** Mantém só códigos que existem na lista oficial, com a descrição da lista. */
-export function conferirBncc(habilidades, lista) {
+export function conferirBncc(habilidades, lista, maximo = 3) {
   const porCodigo = new Map(lista.map((h) => [h.codigo, h]));
   const vistos = new Set();
   return (Array.isArray(habilidades) ? habilidades : [])
     .map((h) => String(h?.codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, ''))
     .filter((c) => porCodigo.has(c) && !vistos.has(c) && vistos.add(c))
-    .slice(0, 3)
-    .map((c) => ({ codigo: c, descricao: porCodigo.get(c).resumo }));
+    .slice(0, maximo)
+    .map((c) => ({ codigo: c, descricao: porCodigo.get(c).resumo, ...(porCodigo.get(c).competencia ? { competencia: porCodigo.get(c).competencia } : {}) }));
 }
 
 // ---------- slides: para cada parte, material → formatação ----------
@@ -289,6 +290,41 @@ export async function gerarSequencia(llm, { serie, bimestre, conteudos, quantida
     .map((i, k) => ({ ordem: k + 1, ...i, aula_id: null }));
   if (!itens.length) throw new Error('A sequência veio vazia.');
   return { titulo: texto(dados.titulo, 120) || 'Sequência didática', itens, provedor };
+}
+
+/** Planejamento detalhado do bimestre: só códigos BNCC da lista oficial, listas limpas e com tamanho limitado. */
+export async function gerarPlanejamento(llm, { serie, bimestre, conteudos, itens }, bncc) {
+  const { dados, provedor } = await llm.gerarJSON({
+    ...promptPlanejamento({ serie, bimestre, conteudos, itens, bncc }),
+    tarefa: 'planejamento',
+    temperatura: 0.3,
+    perfil: 'texto',
+  });
+  return { planejamento: validarPlanejamento(dados, bncc), provedor };
+}
+
+export function validarPlanejamento(dados, bncc) {
+  const texto = (v, n) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, n) : '');
+  const lista = (v, n, max) => (Array.isArray(v) ? v : []).map((x) => texto(x, n)).filter(Boolean).slice(0, max);
+  const habilidades = conferirBncc(dados?.habilidades, bncc, 10);
+  const conteudos = (Array.isArray(dados?.conteudos) ? dados.conteudos : [])
+    .map((c) => ({ tema: texto(c?.tema, 120), topicos: lista(c?.topicos, 160, 12) }))
+    .filter((c) => c.tema)
+    .slice(0, 8);
+  const competenciasGerais = [...new Set((Array.isArray(dados?.competencias_gerais) ? dados.competencias_gerais : [])
+    .map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= 10))].sort((a, b) => a - b);
+  const planejamento = {
+    ementa: texto(dados?.ementa, 600),
+    habilidades,
+    competencias_especificas: [...new Set(habilidades.map((h) => h.competencia).filter(Boolean))].sort((a, b) => a - b),
+    objetivos: lista(dados?.objetivos, 300, 15),
+    conteudos,
+    competencias_gerais: competenciasGerais,
+    avaliacao: lista(dados?.avaliacao, 300, 6),
+    recuperacao: texto(dados?.recuperacao, 400),
+  };
+  if (!planejamento.objetivos.length || !planejamento.conteudos.length) throw new Error('O planejamento veio sem objetivos ou conteúdos.');
+  return planejamento;
 }
 
 // ---------- regerar só uma parte ----------

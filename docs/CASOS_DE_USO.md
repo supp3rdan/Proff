@@ -105,6 +105,7 @@ flowchart LR
 | RN12 | Professor só vê e altera os próprios dados; aula de outro professor responde 404 | `aulaDoProfessor` e similares, RLS |
 | RN13 | Aluno não tem conta; envio com apelido de até 40 caracteres, no máximo 300 envios por aula a cada 10 minutos | `POST /v1/publica/:slug/resultado` |
 | RN14 | Planejamento do bimestre: conteúdos de 3 a 2000 caracteres, de 2 a 20 aulas (padrão 8) | `POST /v1/sequencias`, SQL |
+| RN15 | Planejamento detalhado: até 10 habilidades, só da lista oficial; competências específicas saem das habilidades; competências gerais só de 1 a 10; exige objetivos e conteúdos | `validarPlanejamento` (`public/core/gerador.js`) |
 
 ## 4. Especificação dos casos de uso
 
@@ -202,9 +203,9 @@ flowchart LR
 
 ### UC15 Planejar o bimestre
 - **Ator:** Professor.
-- **Fluxo principal:** 1. Informa conteúdos, série, bimestre, quantidade e turma (`POST /v1/sequencias`). 2. Tarefa `sequencia` gera a lista de aulas. 3. Em cada item, **criar aula** abre a nova aula já preenchida; ao salvar, `POST /v1/aulas` com `sequencia_id` e `ordem` grava o `aula_id` no item.
-- **Alternativos/exceções:** conteúdos com menos de 3 caracteres → 400 (RN14).
-- **Pós-condições:** `sequencias.itens` preenchido; itens ligados às aulas criadas.
+- **Fluxo principal:** 1. Informa conteúdos, série, bimestre, quantidade e turma (`POST /v1/sequencias`). 2. Tarefa `sequencia` gera a lista de aulas e depois o planejamento detalhado (ementa, habilidades BNCC da lista oficial, objetivos, conteúdos com tópicos, competências gerais e específicas, avaliação e recuperação). 3. A tela mostra o planejamento em blocos. 4. **Baixar .docx** abre a janela de cabeçalho (professor, escola, turma, salvos com `PATCH /v1/sequencias/:id`) e baixa o documento no formato de tabela: ficha de identificação e tabela do bimestre HABILIDADES | OBJETIVOS | CONTEÚDOS, mais a sequência de aulas. 5. Em cada item, **Gerar esta aula** abre a nova aula já preenchida; ao salvar, `POST /v1/aulas` com `sequencia_id` e `ordem` grava o `aula_id` no item.
+- **Alternativos/exceções:** conteúdos com menos de 3 caracteres → 400 (RN14); falha no planejamento detalhado → a lista de aulas fica pronta e aparece o botão **Gerar planejamento detalhado** (`POST /v1/sequencias/:id/detalhar`); **Refazer o planejamento detalhado** gera de novo sem cache; banco sem a coluna `detalhes` → aviso para rodar a migration; CDN da `docx` indisponível → erro na janela de download.
+- **Pós-condições:** `sequencias.itens` e `sequencias.detalhes` preenchidos; itens ligados às aulas criadas; arquivo .docx editável no computador do professor.
 
 ### UC16 Usar o banco de questões
 - **Ator:** Professor.

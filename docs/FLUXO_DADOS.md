@@ -178,6 +178,7 @@ erDiagram
     smallint quantidade
     text titulo
     jsonb itens
+    jsonb detalhes
   }
   RESULTADOS {
     uuid id PK
@@ -240,7 +241,7 @@ Observações:
 | `turmas` | Agrupa aulas e sequências de um professor | nome de 1 a 80 caracteres; série 1 a 3 |
 | `tarefas` | Uma geração em andamento ou terminada | tipo `plano`, `slides`, `prova`, `interativa` ou `sequencia`; status `pendente`, `rodando`, `pronta` ou `erro` |
 | `questoes` | Banco de questões do professor, alimentado pela conferência e por "trocar questão" | tipo `multipla` ou `discursiva` |
-| `sequencias` | Planejamento do bimestre: lista de aulas sugeridas | conteúdos até 2000 caracteres; quantidade de 2 a 20 |
+| `sequencias` | Planejamento do bimestre: lista de aulas (`itens`) e planejamento detalhado (`detalhes.planejamento`: ementa, habilidades, objetivos, conteúdos, competências, avaliação; `detalhes.cabecalho`: professor, escola, turma do .docx) | conteúdos até 2000 caracteres; quantidade de 2 a 20 |
 | `resultados` | Envio de um aluno na aula interativa | apelido de 1 a 40; acertos ≥ 0; total > 0 |
 | `curtidas`, `avaliacoes_conteudo` | Curtidas na comunidade e 👍/👎 do professor por parte da aula | nota -1 ou 1; parte `plano`, `slides`, `prova` ou `interativa` |
 | `bncc` | As 43 habilidades EM13MAT (código, competência, resumo) | código no formato `EM13MAT[1-5]NN`; espelhada em `lib/bncc.js` |
@@ -307,6 +308,13 @@ Entrada: `{ "tipo": "plano" | "slides" | "prova" | "interativa", "novo": false }
 { "apelido": "Ana B.", "acertos": 12, "total": 14, "erros": ["quiz:2", "vf:1"] }
 ```
 Regras: apelido até 40 caracteres sem `<`/`>`; `total` de 1 a 100; `acertos` ≤ `total`; até 50 códigos de erro no formato `(quiz|vf|par|desafio):N`; 429 acima de 300 envios em 10 minutos por aula.
+
+### Planejamento do bimestre
+
+- `POST /v1/sequencias` `{ serie, bimestre, quantidade, conteudos, turma_id }` → `{ sequencia, tarefa }` (etapas `sequencia` e `planejamento`).
+- `POST /v1/sequencias/:id/detalhar` → `{ tarefa }` só com a etapa `planejamento` (409 se a lista de aulas ainda não existe).
+- `PATCH /v1/sequencias/:id` `{ professor, escola, turma }` → `{ sequencia }` com `detalhes.cabecalho`. 503 com instrução se o banco não tem a coluna `detalhes`.
+- `detalhes.planejamento`: `{ ementa, habilidades: [{ codigo, descricao, competencia }], competencias_especificas: [3], objetivos: [], conteudos: [{ tema, topicos: [] }], competencias_gerais: [1, 2], avaliacao: [], recuperacao }`. O .docx é montado no navegador a partir desse objeto.
 
 ### `POST /api/sympy_comparar` (interno)
 

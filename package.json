@@ -16,5 +16,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.119.2",
     "@vercel/functions": "^2.2.13"
+  },
+  "devDependencies": {
+    "docx": "9.8.1"
   }
 }

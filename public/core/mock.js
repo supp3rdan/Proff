@@ -208,6 +208,19 @@ export function respostaSimulada(tarefa, usuario) {
           { ordem: 4, assunto: 'Revisão e avaliação', objetivo: 'Consolidar o conteúdo', observacoes: 'Exercícios mistos.' },
         ],
       });
+    case 'planejamento':
+      return JSON.stringify({
+        ementa: 'Funções: conceito, função afim e sua representação gráfica em situações do cotidiano.',
+        habilidades: [{ codigo: 'EM13MAT302' }, { codigo: 'EM13MAT401' }, { codigo: 'EM13MAT501' }, { codigo: 'EM13MAT999' }],
+        objetivos: ['Reconhecer relações de dependência entre grandezas.', 'Identificar o valor inicial e a taxa de variação de uma função afim.', 'Construir o gráfico de uma função afim a partir de uma tabela.', 'Resolver problemas do cotidiano modelados por funções afins.', 'Interpretar o coeficiente angular como taxa de variação.', 'Comparar situações proporcionais e não proporcionais.'],
+        conteudos: [
+          { tema: 'Funções', topicos: ['Noção de função', 'Domínio, contradomínio e imagem', 'Representações: tabela, lei e gráfico'] },
+          { tema: 'Função afim', topicos: ['Lei de formação f(x) = ax + b', 'Coeficientes angular e linear', 'Gráfico da função afim', 'Zero da função', 'Crescimento e decrescimento'] },
+        ],
+        competencias_gerais: [1, 2, 4, 7, 12],
+        avaliacao: ['Prova escrita com questões contextualizadas', 'Lista de exercícios em duplas', 'Atividade com tabelas e gráficos'],
+        recuperacao: 'Retomada dos conteúdos com dificuldade seguida de nova atividade avaliativa.',
+      });
     case 'regerar-slide':
       return String.raw`{ "slide": { "tipo": "conteudo", "titulo": "Lei de formação (nova versão)", "topicos": ["$a$: quanto cresce a cada unidade", "$b$: onde a reta começa"], "formula": "f(x) = ax + b", "notas": "Peça um exemplo à turma." } }`;
     case 'regerar-questao':
