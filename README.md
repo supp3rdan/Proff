@@ -3,7 +3,7 @@
 Gerador de **plano de aula**, **slides**, **avaliação com gabarito** e **aula interativa** de Matemática para o Ensino Médio.
 O professor escolhe a série e o assunto (e, se quiser, como prefere a aula); o Proff faz o resto com APIs **gratuitas** de IA.
 
-🌐 **Acesse: [proff-math.vercel.app](https://proff-math.vercel.app/)** (crie sua conta com e-mail e senha).
+🌐 **Acesse: [proff-math.vercel.app](https://proff-math.vercel.app/)** (crie sua conta com e-mail e senha) · apresentação: [proff-math.vercel.app/conheca](https://proff-math.vercel.app/conheca/)
 
 Hospedagem: **Vercel** (site + servidor) e **Supabase** (banco de dados + login).
 Passo a passo de configuração: **[docs/CONFIGURACAO.md](docs/CONFIGURACAO.md)**.
@@ -81,6 +81,7 @@ public/app.js, public/js/  aplicativo do professor (telas)
 public/core/             geração compartilhada: prompts, roteiro, IA, validação
 public/interativa/       página da aula interativa
 public/pptx*.js          exportação para PowerPoint
+public/conheca/          página de apresentação (feita com a taste-skill, licença MIT)
 server.js                servidor local (imita a Vercel)
 vercel.json              rotas, funções e build
 ```

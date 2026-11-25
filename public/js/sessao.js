@@ -114,7 +114,7 @@ export function telaLogin(alvo, aoEntrar) {
   const demo = sessao.status?.autenticacao === 'demo';
   const email = el('input', { type: 'email', required: true, autocomplete: 'email', placeholder: 'professor@escola.com' });
   const senha = el('input', { type: 'password', autocomplete: 'current-password', minlength: 6, placeholder: 'mínimo 6 caracteres' });
-  const mensagem = el('p', { classe: 'dica' });
+  const mensagem = el('p', { classe: 'dica', role: 'status', 'aria-live': 'polite' });
 
   const entrar = async (modo) => {
     mensagem.textContent = '';
@@ -180,9 +180,14 @@ export function telaLogin(alvo, aoEntrar) {
       demo ? null : botao('Esqueci / criar senha', () => entrar('esqueci'), 'botao botao-link'),
     ]),
     mensagem,
+    el('p', { classe: 'dica' }, [el('a', { href: 'conheca/', texto: 'Conheça o Proff: o que ele faz e como funciona' })]),
   ]);
   form.addEventListener('submit', (e) => { e.preventDefault(); entrar('senha'); });
   substituir(alvo, form);
+  // veio do botão "Criar conta grátis" da página de apresentação
+  if (!demo && new URLSearchParams(location.search).has('criar')) {
+    mensagem.textContent = 'Para criar sua conta, digite seu e-mail e uma senha (mínimo 6 caracteres) e clique em "Criar conta".';
+  }
   email.focus();
 }
 

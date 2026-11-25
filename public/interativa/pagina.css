@@ -2,11 +2,12 @@
 :root {
   --azul: #1f4e79; --azul-medio: #2b6299; --azul-claro: #eef4fa; --amarelo: #ffd166; --amarelo-claro: #fff6dc;
   --laranja: #e07a1f; --laranja-claro: #fdf1e6; --verde: #2e7d4f; --verde-claro: #e8f5ee; --roxo: #6c4ab6;
-  --roxo-claro: #f1ecfb; --vermelho: #b3261e; --vermelho-claro: #fdecea; --texto: #1d2733; --suave: #5b6876;
+  --roxo-claro: #f1ecfb; --vermelho: #b3261e; --vermelho-claro: #fdecea; --texto: #1d2733; --suave: #465260; --laranja-texto: #9a4d0b;
   --borda: #dfe6ee; --fundo: #f7f9fc; --raio: 16px; --sombra: 0 6px 20px rgba(31, 78, 121, .08);
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+html { scroll-padding-top: 70px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body { margin: 0; font: 17px/1.7 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: var(--texto); background: var(--fundo); }
 button { font: inherit; }
 a { color: var(--azul-medio); }
@@ -56,7 +57,7 @@ a { color: var(--azul-medio); }
 /* seções */
 .secao-cabecalho { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
 .secao-icone { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-size: 1.8rem; background: var(--amarelo-claro); flex: none; }
-.secao-cabecalho small { display: block; color: var(--laranja); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
+.secao-cabecalho small { display: block; color: var(--laranja-texto); font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; }
 .secao-cabecalho h2 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.25; color: var(--azul); }
 .secao p { margin: 0 0 14px; }
 
@@ -77,7 +78,7 @@ a { color: var(--azul-medio); }
 .formula p { margin: 0 0 6px; color: var(--suave); font-size: .95rem; }
 
 .exemplo, .exercicio { border: 2px solid var(--borda); border-radius: 16px; padding: 16px 18px; margin: 16px 0; }
-.exemplo-rotulo { font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--laranja); }
+.exemplo-rotulo { font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--laranja-texto); }
 .exemplo .enunciado, .exercicio .enunciado { font-weight: 600; margin: 4px 0 10px; }
 .passos { list-style: none; padding: 0; margin: 0 0 10px; counter-reset: p; }
 .passos li { counter-increment: p; position: relative; padding: 6px 0 6px 40px; animation: surgir .35s ease; }
@@ -105,7 +106,7 @@ a { color: var(--azul-medio); }
 .visual canvas, .visual svg { width: 100%; height: auto; display: block; background: #fff; border-radius: 12px; border: 1px solid var(--borda); touch-action: none; }
 .controles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 18px; margin-top: 12px; }
 .controle label { display: flex; justify-content: space-between; font-weight: 600; font-size: .92rem; }
-.controle output { font-variant-numeric: tabular-nums; color: var(--laranja); font-weight: 800; }
+.controle output { font-variant-numeric: tabular-nums; color: var(--laranja-texto); font-weight: 800; background: #fff; padding: 0 4px; border-radius: 4px; }
 .controle input[type=range] { width: 100%; accent-color: var(--laranja); }
 .leitura-valor { margin-top: 10px; font-size: .95rem; background: var(--azul-claro); border-radius: 10px; padding: 8px 12px; }
 .leitura-valor b { color: var(--azul); }
@@ -161,3 +162,8 @@ a { color: var(--azul-medio); }
   .capa .resumo, .chip { color: #333; }
   .capa::after { display: none; }
 }
+
+/* acessibilidade: foco visível no teclado, rótulos dos campos e alvos de toque de 44px no celular */
+:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+.rotulo-campo { display: block; width: 100%; font-size: .85rem; font-weight: 600; color: var(--suave); margin-bottom: 2px; }
+@media (max-width: 640px) { .botao, .botao-pequeno, button { min-height: 44px; } input[type=text], input[type=range] { min-height: 44px; } .sumario a { display: flex; align-items: center; min-height: 44px; } }

@@ -12,16 +12,35 @@
     }
   },
   "rewrites": [
-    { "source": "/v1/:rota*", "destination": "/api/r?rota=:rota*" },
-    { "source": "/a/:slug", "destination": "/api/r?rota=publica/:slug" }
+    {
+      "source": "/v1/:rota*",
+      "destination": "/api/r?rota=:rota*"
+    },
+    {
+      "source": "/a/:slug",
+      "destination": "/api/r?rota=publica/:slug"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/conheca",
+      "destination": "/conheca/",
+      "permanent": true
     }
   ]
 }

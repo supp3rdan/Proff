@@ -6,7 +6,8 @@
   --verde: #2e7d4f;
   --vermelho: #b3261e;
   --texto: #1d2733;
-  --suave: #5b6876;
+  --suave: #465260;
+  --laranja-texto: #9a4d0b;
   --borda: #d9e1ea;
   --fundo: #f6f8fb;
   --raio: 12px;
@@ -108,10 +109,10 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .espaco-resposta { height: 120px; border: 1px dashed var(--borda); border-radius: 8px; }
 .resposta { font-weight: 700; color: var(--verde); }
 .questao-revisar { background: #fff6e6; border-left: 4px solid var(--laranja); padding: 8px 12px; border-radius: 6px; }
-.divergencia { color: var(--laranja); font-weight: 600; }
+.divergencia { color: var(--laranja-texto); font-weight: 600; }
 .aviso { padding: 10px 14px; border-radius: 8px; }
 .aviso-ok { background: #e8f5ee; color: var(--verde); }
-.aviso-atencao { background: #fff6e6; color: #8a4b0c; }
+.aviso-atencao { background: #fff6e6; color: #7a4009; }
 
 /* miniaturas dos slides */
 .grade-slides { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -141,7 +142,7 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .miniatura-resumo .etiqueta { background: var(--azul); }
 .miniatura-slide .resposta { color: var(--verde); font-weight: 700; }
 .miniatura figcaption { font-size: .82rem; color: var(--suave); margin-top: 6px; }
-.etiqueta { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--laranja); }
+.etiqueta { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--laranja-texto); }
 .etiqueta-exercicio { color: var(--verde); }
 
 .rodape { text-align: center; color: var(--suave); font-size: .85rem; padding: 24px; }
@@ -174,7 +175,7 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .indice { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .passos { padding-left: 22px; }
 .passos li { margin-bottom: 6px; }
-.versao { font-size: .75rem; opacity: .7; }
+.versao { font-size: .75rem; color: var(--suave); }
 .miniatura-secao { background: #163a5c; color: #fff; }
 .miniatura-secao::before { display: none; }
 .miniatura-secao h1 { color: #fff; text-align: left; margin: 2% 0 4px; }
@@ -182,9 +183,9 @@ kbd { border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4
 .miniatura-slide .secao-numero { display: block; margin-top: 12%; font: 700 2rem/1 Georgia, serif; color: var(--amarelo); }
 .miniatura-slide .etiqueta-secao { background: #2b6299; }
 .miniatura-slide .destaque { background: #fdf1e6; border-left: 4px solid var(--laranja); border-radius: 6px; padding: 3px 8px; margin-top: 6px; }
-.miniatura-slide .destaque strong { display: block; color: var(--laranja); font-size: .55rem; text-transform: uppercase; letter-spacing: .08em; }
+.miniatura-slide .destaque strong { display: block; color: var(--laranja-texto); font-size: .55rem; text-transform: uppercase; letter-spacing: .08em; }
 .miniatura-slide .destaque p { margin: 0; font-weight: 600; }
-.aviso-chave { color: #8a4b0c; font-size: .8rem; }
+.aviso-chave { color: #7a4009; font-size: .8rem; }
 .grade-slides > .vazio { grid-column: 1 / -1; }
 
 /* aula interativa */
@@ -225,13 +226,13 @@ a.botao { text-decoration: none; display: inline-block; }
 .grade-cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .cartao-aula { text-decoration: none; color: inherit; display: block; transition: transform .1s, box-shadow .2s; }
 a.cartao-aula:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(31, 78, 121, .12); }
-.cartao-aula h3 { margin: 6px 0 2px; color: var(--azul); font-size: 1.1rem; }
+.cartao-aula h2, .cartao-aula h3 { margin: 6px 0 2px; color: var(--azul); font-size: 1.1rem; }
 .cartao-aula-topo { display: flex; justify-content: space-between; align-items: center; }
 .chips-status { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
 .chip-status { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--fundo); color: var(--suave); border: 1px solid var(--borda); }
 .chip-status.feito { background: #e8f5ee; color: var(--verde); border-color: #bfe3cd; }
 .selo-nivel { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--azul-claro); color: var(--azul); }
-.nivel-reforco { background: #fff6e6; color: #8a4b0c; }
+.nivel-reforco { background: #fff6e6; color: #7a4009; }
 .nivel-avancado { background: #f1ecfb; color: #6c4ab6; }
 .nivel-inclusao { background: #e8f5ee; color: var(--verde); }
 .cabecalho-aula { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -296,4 +297,16 @@ a.cartao-aula:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(3
   body[data-imprimir="gabarito"] .documento:not([data-imprimir="gabarito"]) { display: none; }
   .questao-revisar { background: none; border: none; padding: 0; }
   .divergencia { display: none; }
+}
+
+/* acessibilidade (revisão com o verificador da taste-skill) */
+:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+@media (max-width: 760px) {
+  table.tabela { display: block; overflow-x: auto; max-width: 100%; }
+}
+@media (max-width: 640px) {
+  .botao, .botao-pequeno, .botao-icone { min-height: 44px; }
+  .menu-principal a { min-height: 44px; display: inline-flex; align-items: center; }
+  .login .dica a, .voltar, .rodape a { display: inline-flex; align-items: center; min-height: 44px; }
+  select, input:not([type=checkbox]):not([type=radio]) { min-height: 44px; }
 }

@@ -210,19 +210,22 @@
   }
 
   // ---------- visualizações ----------
+  let idCampo = 0;
+  const novoId = () => `campo-${++idCampo}`;
   function controle({ rotulo, min, max, passo, valor, aoMudar, formato = (v) => fmt(v) }) {
-    const saida = el('output', { texto: formato(valor) });
-    const entrada = el('input', { type: 'range', min, max, step: passo, value: valor, 'aria-label': rotulo });
+    const id = novoId();
+    const saida = el('output', { texto: formato(valor), for: id });
+    const entrada = el('input', { type: 'range', id, min, max, step: passo, value: valor });
     entrada.addEventListener('input', () => {
       saida.textContent = formato(Number(entrada.value));
       aoMudar(Number(entrada.value));
     });
-    return el('div', { classe: 'controle' }, [el('label', {}, [el('span', { texto: rotulo }), saida]), entrada]);
+    return el('div', { classe: 'controle' }, [el('label', { for: id }, [el('span', { texto: rotulo }), saida]), entrada]);
   }
 
   /** Canvas nítido em qualquer tela; devolve contexto e medidas lógicas. */
-  function criarCanvas(largura = 640, altura = 380) {
-    const canvas = el('canvas', { width: largura * 2, height: altura * 2, role: 'img' });
+  function criarCanvas(largura = 640, altura = 380, descricao = 'Gráfico interativo da aula; use os controles abaixo para mudar os valores') {
+    const canvas = el('canvas', { width: largura * 2, height: altura * 2, role: 'img', 'aria-label': descricao });
     const ctx = canvas.getContext('2d');
     ctx.scale(2, 2);
     return { canvas, ctx, largura, altura };
@@ -576,10 +579,11 @@
       area.replaceChildren(el('p', { classe: 'feedback ok', texto: '✅ Seu resultado já foi enviado ao professor.' }));
       return;
     }
-    const apelido = el('input', { type: 'text', maxlength: 40, placeholder: 'seu nome ou apelido', 'aria-label': 'Seu nome ou apelido', autocomplete: 'nickname' });
+    const idApelido = novoId();
+    const apelido = el('input', { type: 'text', id: idApelido, maxlength: 40, placeholder: 'ex.: Ana B.', autocomplete: 'nickname' });
     const enviar = el('button', { classe: 'botao botao-cheio botao-pequeno', type: 'submit', texto: 'Enviar ao professor' });
     const aviso = el('div');
-    const form = el('form', {}, [apelido, enviar]);
+    const form = el('form', {}, [el('label', { classe: 'rotulo-campo', for: idApelido, texto: 'Seu nome ou apelido' }), apelido, enviar]);
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!apelido.value.trim()) return apelido.focus();
@@ -702,10 +706,11 @@
     let feitos = 0;
     return el('div', {}, lista.map((d, indice) => {
       const fb = el('div');
-      const entrada = el('input', { type: 'text', inputmode: 'decimal', placeholder: 'sua resposta', 'aria-label': 'Resposta' });
+      const idResposta = novoId();
+      const entrada = el('input', { type: 'text', id: idResposta, inputmode: 'decimal', placeholder: 'ex.: 12,5' });
       let tentativas = 0;
       let encerrado = false;
-      const form = el('form', {}, [entrada, el('button', { classe: 'botao botao-cheio botao-pequeno', type: 'submit', texto: 'Conferir' }),
+      const form = el('form', {}, [el('label', { classe: 'rotulo-campo', for: idResposta, texto: 'Sua resposta' }), entrada, el('button', { classe: 'botao botao-cheio botao-pequeno', type: 'submit', texto: 'Conferir' }),
         d.dica ? el('button', { classe: 'botao botao-pequeno', type: 'button', texto: '💡 Dica', onclick: () => { fb.replaceChildren(el('div', { classe: 'revelar', texto: d.dica })); matematica(fb); } }) : null]);
       form.addEventListener('submit', (e) => {
         e.preventDefault();

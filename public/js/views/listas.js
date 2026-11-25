@@ -25,7 +25,7 @@ function cartaoAula(a, extra = []) {
       el('span', { classe: 'meta', texto: `${a.serie}º ano${a.bimestre ? ` · ${a.bimestre}º bim.` : ''}` }),
       el('span', { classe: `selo-nivel nivel-${a.nivel}`, texto: rotuloNivel(a.nivel) }),
     ]),
-    el('h3', { texto: a.titulo || a.assunto }),
+    el('h2', { texto: a.titulo || a.assunto }),
     a.titulo && a.titulo !== a.assunto ? el('p', { classe: 'meta', texto: a.assunto }) : null,
     chips(a.tem),
     el('p', { classe: 'meta', texto: `Atualizada em ${dataCurta(a.atualizado_em)}${a.publica ? ' · 🔗 link ativo' : ''}${a.comunidade ? ' · 🌎 comunidade' : ''}` }),
@@ -387,7 +387,7 @@ export async function telaComunidade(alvo, ctx) {
         }, 'botao botao-pequeno');
         return el('div', { classe: 'cartao cartao-aula' }, [
           el('div', { classe: 'cartao-aula-topo' }, [el('span', { classe: 'meta', texto: `${a.serie}º ano` }), el('span', { classe: `selo-nivel nivel-${a.nivel}`, texto: rotuloNivel(a.nivel) })]),
-          el('h3', { texto: a.titulo || a.assunto }),
+          el('h2', { texto: a.titulo || a.assunto }),
           el('p', { classe: 'meta', texto: a.assunto }),
           chips(a.tem),
           el('div', { classe: 'acoes acoes-esquerda' }, [

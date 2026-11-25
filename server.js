@@ -57,7 +57,13 @@ createServer(async (req, res) => {
       res.statusCode = 403;
       return res.end('Proibido');
     }
-    if (existsSync(arquivo) && (await stat(arquivo)).isDirectory()) arquivo = join(arquivo, 'index.html');
+    if (existsSync(arquivo) && (await stat(arquivo)).isDirectory()) {
+      if (!caminho.endsWith('/')) {
+        res.writeHead(301, { Location: `${caminho}/` });
+        return res.end();
+      }
+      arquivo = join(arquivo, 'index.html');
+    }
     if (!existsSync(arquivo)) {
       res.statusCode = 404;
       return res.end('Não encontrado');
